@@ -28,6 +28,7 @@ The data comes from the Google Form's response sheet, which must be shared as **
 | *Card of the match* | Stored; not shown yet |
 
 Informal commander names are resolved on [Scryfall](https://scryfall.com): it picks the most popular legal commander matching the text, then falls back to a fuzzy name match. If it picks the wrong card, pin it in `commanderMap` in `js/config.js`. For partners, use `Thrasios + Tymna`.
+
 ## Hosting (GitHub Pages, free)
 
 1. Create a public repo on GitHub, e.g. `pod-stats`.
