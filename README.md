@@ -17,20 +17,17 @@ Stats dashboard for our Magic: The Gathering Commander pod. It's a plain static 
 
 ## The spreadsheet
 
-The sheet must be shared as **Anyone with the link → Viewer**. The site expects **one row per player per game**, with a header row. Column names are matched loosely, in Dutch or English:
+The data comes from the Google Form's response sheet, which must be shared as **Anyone with the link → Viewer**. Each row is one game. Columns are matched by words in the form question:
 
-| Column | Required | Examples |
-|---|---|---|
-| `Datum` / `Date` | yes | `24-9-2026`, `2026-09-24` |
-| `Speler` / `Player` | yes | `Joost` |
-| `Commander` / `Deck` | recommended | `Kinnan, Bonder Prodigy`. For partners, use `Thrasios / Tymna` |
-| `Winst` / `Win` | yes | `1`, `x`, `ja`, `TRUE` (anything else counts as a loss) |
-| `Potje` / `Game` | optional | a number. Needed when you play more than one game per night |
-| `Kleuren` / `Colors` | optional | `WUBG`. If blank, it is looked up on Scryfall |
-| `Archetype` | optional | `Ramp · combo` |
+| Question | Used for |
+|---|---|
+| *Wie speelde welke commanders?* | Players and commanders, e.g. `Sem - aragorn hero, Toon - Imodane, Patrick Yshtola` |
+| *Wie won?* | The winner. It should match one of the player names |
+| *Wanneer?* | The game date. If empty, the timestamp is used |
+| *Hoe lang duurde de pot?* | Duration (`1:29`), shown in the game log |
+| *Card of the match* | Stored; not shown yet |
 
-Commander artwork and colour identity come from [Scryfall](https://scryfall.com).
-
+Informal commander names are resolved on [Scryfall](https://scryfall.com): it picks the most popular legal commander matching the text, then falls back to a fuzzy name match. If it picks the wrong card, pin it in `commanderMap` in `js/config.js`. For partners, use `Thrasios + Tymna`.
 ## Hosting (GitHub Pages, free)
 
 1. Create a public repo on GitHub, e.g. `pod-stats`.

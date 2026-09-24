@@ -1,5 +1,5 @@
 import { CONFIG } from './config.js';
-import { fetchGames, cachedGames, enrichCommanders } from './data.js';
+import { fetchGames, cachedGames, enrichCommanders, resolveGames } from './data.js';
 import { computeStats, pickSeason } from './stats.js';
 import { header, overview, profile, skeleton, errorPanel } from './render.js';
 import { demoGames } from './demo.js';
@@ -18,10 +18,11 @@ const state = {
 };
 
 let memo = { key: null, stats: null };
+let dataVersion = 0;
 function stats() {
   const season = pickSeason(state.games);
-  const key = state.games.length + '|' + state.range + '|' + season + '|' + enrichTick;
-  if (memo.key !== key) memo = { key, stats: computeStats(state.games, { range: state.range, season }) };
+  const key = dataVersion + '|' + state.range + '|' + season + '|' + enrichTick;
+  if (memo.key !== key) memo = { key, stats: computeStats(resolveGames(state.games), { range: state.range, season }) };
   return memo.stats;
 }
 
@@ -67,11 +68,13 @@ window.addEventListener('hashchange', () => {
 });
 
 let enrichTick = 0;
-async function enrich() {
-  const names = state.games.flatMap(g => g.seats.map(s => s.commander).filter(Boolean));
-  await enrichCommanders(names);
-  enrichTick++;
-  render();
+let enriching = Promise.resolve();
+function enrich() {
+  // One lookup run at a time, so the cached and the fresh data don't query Scryfall twice.
+  enriching = enriching.then(async () => {
+    const names = state.games.flatMap(g => g.seats.map(s => s.commander).filter(Boolean));
+    if (await enrichCommanders(names)) { enrichTick++; render(); }
+  });
 }
 
 async function start() {
@@ -84,7 +87,7 @@ async function start() {
   render();
   if (state.games) enrich();
   try {
-    state.games = await fetchGames();
+    state.games = await fetchGames(); dataVersion++;
     state.error = null;
     render(); enrich();
   } catch (err) {
