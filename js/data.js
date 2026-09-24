@@ -197,7 +197,9 @@ async function lookup(raw) {
 }
 
 export async function enrichCommanders(rawNames) {
-  const wanted = [...new Set(rawNames.flatMap(splitCommander).map(norm))].filter(n => !(n in scryCache) && !missed.has(n));
+  // A cached guess that disagrees with a pin in commanderMap is looked up again.
+  const stale = n => { const pin = CONFIG.commanderMap[n]; return pin && scryCache[n] && norm(scryCache[n].name) !== norm(pin); };
+  const wanted = [...new Set(rawNames.flatMap(splitCommander).map(norm))].filter(n => (!(n in scryCache) || stale(n)) && !missed.has(n));
   let changed = false;
   for (const n of wanted) {
     try {

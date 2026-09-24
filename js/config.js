@@ -25,5 +25,8 @@ export const CONFIG = {
 
   // Pin a nickname from the form to one exact card when the automatic Scryfall match is wrong.
   // Keys are lowercase, e.g. { 'yshtola': "Y'shtola, Night's Blessed", 'ashling': 'Ashling, Flame Dancer' }
-  commanderMap: {},
+  commanderMap: {
+    'yshtola': "Y'shtola, Night's Blessed",
+    'ashling': 'Ashling, the Limitless',
+  },
 };
