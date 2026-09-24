@@ -22,4 +22,8 @@ export const CONFIG = {
 
   // Map spelling variants in the sheet to one display name, e.g. { 'sem m': 'Sem' }
   nameMap: {},
+
+  // Pin a nickname from the form to one exact card when the automatic Scryfall match is wrong.
+  // Keys are lowercase, e.g. { 'yshtola': "Y'shtola, Night's Blessed", 'ashling': 'Ashling, Flame Dancer' }
+  commanderMap: {},
 };

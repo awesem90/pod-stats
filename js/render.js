@@ -252,7 +252,7 @@ export function profile(st, name) {
       <span class="log-date">${shortDate(game.date)}</span>
       <span class="log-mid">
         <span class="log-deck">${esc(seat.commander || '—')}</span>
-        <span class="log-table">met ${esc(others.join(' · '))}</span>
+        <span class="log-table">met ${esc(others.join(' · '))}${game.minutes ? ' · ' + fmtMinutes(game.minutes) : ''}</span>
       </span>
       <span class="result${seat.win ? ' w' : ''}">${seat.win ? 'WINST' : 'VERLIES'}</span>
     </div>`;
@@ -305,6 +305,8 @@ export function profile(st, name) {
     <p class="source">${esc(CONFIG.source)}</p>
   </div>`;
 }
+
+const fmtMinutes = m => m >= 60 ? Math.floor(m / 60) + 'u' + String(m % 60).padStart(2, '0') : m + ' min';
 
 function mostCommon(list) {
   const c = {}; list.forEach(v => { c[v] = (c[v] || 0) + 1; });
