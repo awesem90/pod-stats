@@ -1,7 +1,7 @@
 // Everything you are likely to tweak lives here.
 export const CONFIG = {
   // The Google Sheet. It must be shared as "Anyone with the link can view".
-  sheetId: '12l2BfjT5GnPWyDPx3oEH60qTCjqP06Y3x1yyL0bLhhA',
+  sheetId: '1aPBhP5bHYOHX0Ga5YbpJovJDKwzNPBffUYn-vhhJUUs',
   // Tab name inside the sheet. Leave empty to use the first tab.
   sheetTab: '',
 
