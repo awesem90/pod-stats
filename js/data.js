@@ -92,12 +92,32 @@ const displayName = raw => {
 };
 
 // "Sem - aragorn hero, Toon - Imodane, Patrick Yshtola" -> [{player, commander}]
-function parsePlayed(text) {
-  return String(text || '').split(/[,;\n]+/).map(s => s.trim()).filter(Boolean).map(entry => {
-    let m = entry.match(/^(.+?)\s+[-–—:]\s*(.+)$/) || entry.match(/^(.+?)\s*[-–—:]\s+(.+)$/);
-    if (!m) m = entry.match(/^(\S+)\s+(.+)$/);
-    return m ? { player: displayName(m[1]), commander: m[2].trim() } : { player: displayName(entry), commander: null };
+const SEP = /^(.+?)\s+[-–—:]\s*(.+)$|^(.+?)\s*[-–—:]\s+(.+)$/;
+const splitEntry = e => { const m = e.match(SEP); return m ? [m[1] || m[3], m[2] || m[4]] : null; };
+
+function parsePlayed(text, known) {
+  // Card names contain commas too ("Astarion, the Decadent"), so a comma only starts a new
+  // entry when the next fragment has its own "Name - " or starts with a known player's name.
+  const entries = [];
+  for (const frag of String(text || '').split(/[,;\n]+/).map(s => s.trim()).filter(Boolean)) {
+    const startsNew = splitEntry(frag) || known.has(norm(frag.split(/\s+/)[0]));
+    if (!startsNew && entries.length) entries[entries.length - 1] += ', ' + frag;
+    else entries.push(frag);
+  }
+  return entries.map(entry => {
+    const m = splitEntry(entry) || (entry.match(/^(\S+)\s+(.+)$/) || []).slice(1);
+    return m.length ? { player: displayName(m[0]), commander: m[1].trim() } : { player: displayName(entry), commander: null };
   });
+}
+
+// Player names seen anywhere: before a " - " separator, or in the winner column.
+function knownPlayers(played, winners) {
+  const known = new Set(winners.map(norm).filter(Boolean));
+  for (const text of played) for (const frag of String(text).split(/[,;\n]+/)) {
+    const m = splitEntry(frag.trim());
+    if (m) known.add(norm(m[0]));
+  }
+  return known;
 }
 
 // ---------- Rows -> games ----------
@@ -112,13 +132,14 @@ export function rowsToGames(rows) {
   const body = rows.slice(1);
   const get = (r, k) => idx[k] === undefined ? '' : (r[idx[k]] ?? '').trim();
   const order = detectOrder([...body.map(r => get(r, 'date')), ...body.map(r => get(r, 'timestamp'))]);
+  const known = knownPlayers(body.map(r => get(r, 'played')), body.map(r => get(r, 'winner')));
 
   const games = [];
   body.forEach((r, i) => {
     const date = parseDate(get(r, 'date'), order) || parseDate(get(r, 'timestamp'), order);
     if (!date) return;
     const winner = norm(get(r, 'winner'));
-    const seats = parsePlayed(get(r, 'played')).map(s => ({
+    const seats = parsePlayed(get(r, 'played'), known).map(s => ({
       ...s,
       win: !!winner && (norm(s.player) === winner || norm(s.player).startsWith(winner) || winner.startsWith(norm(s.player))),
     }));
