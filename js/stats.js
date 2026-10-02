@@ -170,7 +170,7 @@ export function computeStats(allGames, { range, season }) {
 
   return {
     season, range, games, seasonGames, avg, players, names, commanders, strong, shared, matrix, rivalries, together,
-    seats, wins, longest, uniqueCommanders, firstSeen,
+    allGames, seats, wins, longest, uniqueCommanders, firstSeen,
     avgSeats: games.length ? seats / games.length : 0,
     avgWinsPerPlayer: players.length ? wins / players.length : 0,
     commanderColors,
