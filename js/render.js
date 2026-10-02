@@ -1,6 +1,6 @@
 // HTML for both screens. Everything is built from the stats object.
 import { CONFIG } from './config.js';
-import { cardInfo, splitCommander, norm } from './data.js';
+import { cardInfo, splitCommander, norm, matchCard } from './data.js';
 import { pct, nl1, fmtStreak, shortDate, monthYear, COLOR_NL } from './stats.js';
 
 const MANA = { W: '#F4EBC8', U: '#4FB3FF', B: '#A58CFF', R: '#FF5A4E', G: '#3DDC84' };
@@ -346,8 +346,8 @@ export function plays(st, filter) {
     const cotm = g.card ? `
       <figure class="side-block">
         <span class="kpi-label">CARD OF THE MATCH</span>
-        <a class="cotm" href="https://scryfall.com/search?q=${encodeURIComponent(g.card)}" target="_blank" rel="noopener">
-          <img src="https://api.scryfall.com/cards/named?fuzzy=${encodeURIComponent(g.card)}&format=image&version=normal" alt="" loading="lazy" onerror="this.remove()">
+        <a class="cotm" href="${esc(matchCard(g.card)?.uri || 'https://scryfall.com/search?q=' + encodeURIComponent(g.card))}" target="_blank" rel="noopener">
+          ${matchCard(g.card)?.image ? `<img src="${esc(matchCard(g.card).image)}" alt="" loading="lazy" onerror="this.remove()">` : ''}
           <span>${esc(g.card)}</span>
         </a>
       </figure>` : '';
