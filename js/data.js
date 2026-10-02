@@ -1,7 +1,7 @@
 // Fetch the pod spreadsheet (Google Form responses), parse it into games, and resolve commanders via Scryfall.
 import { CONFIG } from './config.js';
 
-const CACHE_KEY = 'podstats:games:v2';
+const CACHE_KEY = 'podstats:games:v3';
 const SCRY_KEY = 'podstats:scryfall:v3';
 
 // ---------- Tiny localStorage helpers (storage may be blocked) ----------
@@ -40,6 +40,8 @@ const COLUMNS = {
   card: ['card of the match', 'kaart'],
   date: ['wanneer', 'datum', 'date'],
   duration: ['hoe lang', 'duur', 'duration'],
+  starter: ['begon', 'begint', 'startte', 'start', 'eerst', 'first'],
+  photo: ['foto', 'afbeelding', 'image', 'photo', 'plaatje', 'upload'],
 };
 function mapHeader(header) {
   const idx = {};
@@ -62,16 +64,41 @@ function detectOrder(values) {
   }
   return 'mdy';
 }
+const MONTHS = { jan: 1, feb: 2, mrt: 3, mar: 3, maa: 3, apr: 4, mei: 5, may: 5, jun: 6, jul: 7, aug: 8, sep: 9, okt: 10, oct: 10, nov: 11, dec: 12 };
+const iso = (y, mo, d) => `${y}-${String(mo).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+
+// Also accepts "10 Sep" / "16 september 2026". Without a year: the latest such date that isn't in the future.
 function parseDate(v, order) {
   const s = String(v || '').trim();
-  const iso = (y, mo, d) => `${y}-${String(mo).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
   let m;
   if ((m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/))) return iso(m[1], m[2], m[3]);
   if ((m = s.match(SLASH))) {
     let y = +m[3]; if (y < 100) y += 2000;
     return order === 'dmy' ? iso(y, m[2], m[1]) : iso(y, m[1], m[2]);
   }
+  if ((m = s.match(/^(\d{1,2})\s+([a-z]{3})[a-z]*\.?(?:\s+(\d{4}))?/i))) {
+    const mo = MONTHS[m[2].toLowerCase()];
+    if (!mo) return null;
+    if (m[3]) return iso(m[3], mo, m[1]);
+    const now = new Date(), y = now.getFullYear();
+    const guess = iso(y, mo, m[1]);
+    return guess <= iso(y, now.getMonth() + 1, now.getDate()) ? guess : iso(y - 1, mo, m[1]);
+  }
   return null;
+}
+
+// "—", "-", "geen" and the like mean "nothing filled in".
+const blank = v => !String(v || '').replace(/^\s*(?:[-–—.]+|n\/?a|geen|none)\s*$/i, '').trim();
+
+// A form upload or pasted link -> { src, href }. Drive files must be shared "anyone with the link".
+function parsePhoto(v) {
+  const url = (String(v || '').match(/https?:\/\/[^\s,]+/) || [])[0];
+  if (!url) return null;
+  const id = (url.match(/[?&]id=([\w-]{10,})/) || url.match(/\/d\/([\w-]{10,})/) || [])[1];
+  if (/drive\.google\.com|docs\.google\.com/.test(url) && id) {
+    return { src: `https://drive.google.com/thumbnail?id=${id}&sz=w1600`, href: `https://drive.google.com/file/d/${id}/view` };
+  }
+  return { src: url, href: url };
 }
 const timeOf = v => (String(v).match(/(\d{1,2}):(\d{2})(?::(\d{2}))?/) || []).slice(1).map(n => String(+n || 0).padStart(2, '0')).join(':');
 
@@ -85,7 +112,8 @@ function parseDuration(v) {
 }
 
 // ---------- Names ----------
-const titleCase = s => s.replace(/\b\p{L}/gu, c => c.toUpperCase());
+// Only fix all-lowercase input ("aragorn hero"); names typed with care ("Ureni of the Unwritten") stay as they are.
+const titleCase = s => s === s.toLowerCase() ? s.replace(/(^|[\s(/-])(\p{L})/gu, (m, a, c) => a + c.toUpperCase()) : s;
 const displayName = raw => {
   const n = String(raw || '').trim().replace(/\s+/g, ' ');
   return CONFIG.nameMap[n] || CONFIG.nameMap[n.toLowerCase()] || titleCase(n);
@@ -95,30 +123,50 @@ const displayName = raw => {
 const SEP = /^(.+?)\s+[-–—:]\s*(.+)$|^(.+?)\s*[-–—:]\s+(.+)$/;
 const splitEntry = e => { const m = e.match(SEP); return m ? [m[1] || m[3], m[2] || m[4]] : null; };
 
+// "Mauro (Satoru Umezawa)" is a complete entry on its own.
+const PAREN = /^(.+?)\s*\((.+)\)\s*$/;
+const parenEntry = e => { const m = e.match(PAREN); return m ? [m[1], m[2]] : null; };
+
+// Split on commas, semicolons and newlines, but never inside parentheses.
+function fragments(text) {
+  const out = []; let cur = '', depth = 0;
+  for (const c of String(text || '')) {
+    if (c === '(') depth++;
+    if (c === ')') depth = Math.max(0, depth - 1);
+    if (depth === 0 && /[,;\n]/.test(c)) { out.push(cur); cur = ''; } else cur += c;
+  }
+  out.push(cur);
+  return out.map(s => s.trim()).filter(Boolean);
+}
+
 function parsePlayed(text, known) {
   // Card names contain commas too ("Astarion, the Decadent"), so a comma only starts a new
-  // entry when the next fragment has its own "Name - " or starts with a known player's name.
+  // entry when the next fragment has its own "Name - " / "Name (…)" or starts with a known player's name.
   const entries = [];
-  for (const frag of String(text || '').split(/[,;\n]+/).map(s => s.trim()).filter(Boolean)) {
-    const startsNew = splitEntry(frag) || known.has(norm(frag.split(/\s+/)[0]));
+  for (const frag of fragments(text)) {
+    const prevClosed = entries.length && parenEntry(entries[entries.length - 1]);
+    const startsNew = prevClosed || parenEntry(frag) || splitEntry(frag) || known.has(norm(frag.split(/\s+/)[0]));
     if (!startsNew && entries.length) entries[entries.length - 1] += ', ' + frag;
     else entries.push(frag);
   }
   return entries.map(entry => {
-    const m = splitEntry(entry) || (entry.match(/^(\S+)\s+(.+)$/) || []).slice(1);
+    const m = parenEntry(entry) || splitEntry(entry) || (entry.match(/^(\S+)\s+(.+)$/) || []).slice(1);
     return m.length ? { player: displayName(m[0]), commander: m[1].trim() } : { player: displayName(entry), commander: null };
   });
 }
 
-// Player names seen anywhere: before a " - " separator, or in the winner column.
+// Player names seen anywhere: before a " - " or "(", or in the winner column.
 function knownPlayers(played, winners) {
   const known = new Set(winners.map(norm).filter(Boolean));
-  for (const text of played) for (const frag of String(text).split(/[,;\n]+/)) {
-    const m = splitEntry(frag.trim());
+  for (const text of played) for (const frag of fragments(text)) {
+    const m = parenEntry(frag) || splitEntry(frag);
     if (m) known.add(norm(m[0]));
   }
   return known;
 }
+
+// Loose name match against a seat: "Sem", "sem", "Sem M." all hit "Sem".
+const sameName = (a, b) => { a = norm(a); b = norm(b); return !!a && !!b && (a === b || a.startsWith(b) || b.startsWith(a)); };
 
 // ---------- Rows -> games ----------
 export function rowsToGames(rows) {
@@ -138,22 +186,21 @@ export function rowsToGames(rows) {
   body.forEach((r, i) => {
     const date = parseDate(get(r, 'date'), order) || parseDate(get(r, 'timestamp'), order);
     if (!date) return;
-    const winner = norm(get(r, 'winner'));
-    const seats = parsePlayed(get(r, 'played'), known).map(s => ({
-      ...s,
-      win: !!winner && (norm(s.player) === winner || norm(s.player).startsWith(winner) || winner.startsWith(norm(s.player))),
-    }));
-    // Only one winner per game, even if a loose name match hit twice.
-    let seen = false; seats.forEach(s => { if (s.win && seen) s.win = false; if (s.win) seen = true; });
+    const winner = get(r, 'winner'), starter = get(r, 'starter');
+    const seats = parsePlayed(get(r, 'played'), known).map(s => ({ ...s, win: sameName(s.player, winner), starter: sameName(s.player, starter) }));
+    // Only one winner and one starter per game, even if a loose name match hit twice.
+    for (const k of ['win', 'starter']) { let seen = false; seats.forEach(s => { if (s[k] && seen) s[k] = false; if (s[k]) seen = true; }); }
     if (seats.length < 2) return;
     const stamp = parseDate(get(r, 'timestamp'), order);
     games.push({
       id: 'r' + (i + 2),
       date,
-      sort: date + ' ' + (stamp || '') + ' ' + timeOf(get(r, 'timestamp')),
+      // Rows without a timestamp keep their sheet order within a day.
+      sort: date + ' ' + (stamp || '') + ' ' + timeOf(get(r, 'timestamp')) + ' ' + String(i).padStart(5, '0'),
       seats,
-      card: get(r, 'card') || null,
+      card: blank(get(r, 'card')) ? null : get(r, 'card'),
       minutes: parseDuration(get(r, 'duration')),
+      photo: parsePhoto(get(r, 'photo')),
     });
   });
   games.sort((a, b) => a.sort.localeCompare(b.sort));
@@ -197,9 +244,16 @@ function toInfo(card) {
 }
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
+// null only means "no such card". Rate limits (429) and server hiccups are retried with a growing delay.
 async function scry(path) {
-  const res = await fetch('https://api.scryfall.com' + path, { headers: { Accept: 'application/json' } });
-  return res.ok ? res.json() : null;
+  for (let attempt = 0; attempt < 5; attempt++) {
+    // A 429 reply carries no CORS header, so the browser reports it as a network error: retry that too.
+    const res = await fetch('https://api.scryfall.com' + path, { headers: { Accept: 'application/json' } }).catch(() => null);
+    if (res?.ok) return res.json();
+    if (res && (res.status === 404 || res.status === 400)) return null;
+    await sleep(500 * 2 ** attempt);
+  }
+  throw new Error('Scryfall onbereikbaar');
 }
 
 async function lookup(raw) {
@@ -226,7 +280,7 @@ export async function enrichCommanders(rawNames) {
     try {
       const info = await lookup(n);
       if (info) { scryCache[n] = info; scryCache[norm(info.name)] = info; changed = true; } else missed.add(n);
-    } catch { missed.add(n); }
+    } catch { /* offline or still rate-limited: try again on the next visit */ }
     await sleep(100); // Scryfall asks for at most ~10 requests per second
   }
   if (changed) save(SCRY_KEY, scryCache);

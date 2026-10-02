@@ -12,7 +12,7 @@ Stats dashboard for our Magic: The Gathering Commander pod. It's a plain static 
 | `js/data.js` | Fetches and parses the sheet; Scryfall art and colour identity |
 | `js/stats.js` | Every stat (winrate, streaks, rivalries…) as pure functions |
 | `js/render.js` | HTML for the overview and profile screens |
-| `js/app.js` | Routing (`#/`, `#/speler/<naam>`), state, caching |
+| `js/app.js` | Routing (`#/`, `#/speler/<naam>`, `#/potjes`, `#/potjes/<naam>`), state, caching |
 | `js/demo.js` | Invented sample data. Open the site with `?demo` to see it |
 
 ## The spreadsheet
@@ -21,11 +21,13 @@ The data comes from the Google Form's response sheet, which must be shared as **
 
 | Question | Used for |
 |---|---|
-| *Wie speelde welke commanders?* | Players and commanders, e.g. `Sem - aragorn hero, Toon - Imodane, Patrick Yshtola` |
+| *Wie speelde welke commanders?* | Players and commanders, e.g. `Sem - aragorn hero, Toon - Imodane, Patrick Yshtola` or `Mauro (Satoru Umezawa), Raoul (Marchesa, the Black Rose)` |
 | *Wie won?* | The winner. It should match one of the player names |
 | *Wanneer?* | The game date. If empty, the timestamp is used |
 | *Hoe lang duurde de pot?* | Duration (`1:29`), shown in the game log |
-| *Card of the match* | Stored; not shown yet |
+| *Card of the match* | Shown with its card image (Scryfall) on the Potjes page |
+| *Wie begon?* | Who started; tagged `1E` on the Potjes page, plus the "beginner wint" stat |
+| *Foto* | A Google Form file upload or a pasted image link. Drive files must be shared "anyone with the link" |
 
 Informal commander names are resolved on [Scryfall](https://scryfall.com): it picks the most popular legal commander matching the text, then falls back to a fuzzy name match. If it picks the wrong card, pin it in `commanderMap` in `js/config.js`. For partners, use `Thrasios + Tymna`.
 

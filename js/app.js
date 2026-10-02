@@ -1,7 +1,7 @@
 import { CONFIG } from './config.js';
 import { fetchGames, cachedGames, enrichCommanders, resolveGames } from './data.js';
 import { computeStats, pickSeason } from './stats.js';
-import { header, overview, profile, skeleton, errorPanel } from './render.js';
+import { header, overview, profile, plays, skeleton, errorPanel } from './render.js';
 import { demoGames } from './demo.js';
 
 const app = document.getElementById('app');
@@ -29,6 +29,7 @@ function stats() {
 function route() {
   const h = decodeURIComponent(location.hash.replace(/^#\/?/, ''));
   if (h.startsWith('speler')) return { screen: 'player', name: h.slice('speler/'.length) || null };
+  if (h.startsWith('potjes')) return { screen: 'plays', name: h.slice('potjes/'.length) || null };
   return { screen: 'overview' };
 }
 
@@ -45,6 +46,9 @@ function render() {
     if (name && name !== state.player) { state.player = name; pref.set('player', name); }
     body = profile(st, name);
     document.title = (name ? name + ' · ' : '') + 'POD//STATS';
+  } else if (r.screen === 'plays') {
+    body = plays(st, r.name);
+    document.title = 'Potjes · POD//STATS';
   } else {
     body = overview(st, state.range);
     document.title = 'POD//STATS';
@@ -74,7 +78,7 @@ function enrich() {
   enriching = enriching.then(async () => {
     const names = state.games.flatMap(g => g.seats.map(s => s.commander).filter(Boolean));
     if (await enrichCommanders(names)) { enrichTick++; render(); }
-  });
+  }).catch(err => console.warn('POD//STATS: Scryfall lookup failed', err)); // keep the chain alive
 }
 
 async function start() {

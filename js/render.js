@@ -1,6 +1,6 @@
 // HTML for both screens. Everything is built from the stats object.
 import { CONFIG } from './config.js';
-import { cardInfo, splitCommander } from './data.js';
+import { cardInfo, splitCommander, norm } from './data.js';
 import { pct, nl1, fmtStreak, shortDate, monthYear, COLOR_NL } from './stats.js';
 
 const MANA = { W: '#F4EBC8', U: '#4FB3FF', B: '#A58CFF', R: '#FF5A4E', G: '#3DDC84' };
@@ -62,6 +62,7 @@ export function header(st, screen) {
     <nav class="nav">
       <a href="#/" class="${screen === 'overview' ? 'active' : ''}">Overzicht</a>
       <a href="#/speler" class="${screen === 'player' ? 'active' : ''}">Speler</a>
+      <a href="#/potjes" class="${screen === 'plays' ? 'active' : ''}">Potjes</a>
     </nav>
     <div class="status"><span class="status-dot"></span>${status}</div>
   </header>`;
@@ -297,11 +298,92 @@ export function profile(st, name) {
         <span class="foot-note">WINRATE WANNEER DEZE SPELER OOK AAN TAFEL ZIT</span>
       </div>
       <div class="panel log-panel">
-        <h2 class="h2 panel-head">Laatste potjes</h2>
+        <div class="panel-head"><h2 class="h2">Laatste potjes</h2><a class="caption" href="#/potjes/${encodeURIComponent(p.name)}">ALLE POTJES &gt;</a></div>
         ${log}
       </div>
     </section>
 
+    <p class="source">${esc(CONFIG.source)}</p>
+  </div>`;
+}
+
+// ---------- All plays ----------
+export function plays(st, filter) {
+  const all = st.allGames.slice().reverse();
+  const names = [...new Set(all.flatMap(g => g.seats.map(s => s.player)))].sort((a, b) => a.localeCompare(b));
+  const who = filter && names.find(n => norm(n) === norm(filter));
+  const list = who ? all.filter(g => g.seats.some(s => s.player === who)) : all;
+  const number = new Map(st.allGames.map((g, i) => [g.id, i + 1]));
+
+  const timed = list.filter(g => g.minutes);
+  const avgMin = timed.length ? Math.round(timed.reduce((t, g) => t + g.minutes, 0) / timed.length) : 0;
+  const longest = timed.reduce((m, g) => (!m || g.minutes > m.minutes ? g : m), null);
+  const withStarter = list.filter(g => g.seats.some(s => s.starter));
+  const starterWins = withStarter.filter(g => g.seats.some(s => s.starter && s.win)).length;
+  const kpis = [
+    { label: 'POTJES', value: list.length, sub: who ? 'met ' + who : 'alle seizoenen' },
+    { label: 'GEMIDDELDE DUUR', value: avgMin ? fmtMinutes(avgMin) : '—', sub: timed.length ? timed.length + ' potjes met tijd' : 'nog geen tijden' },
+    { label: 'LANGSTE POTJE', value: longest ? fmtMinutes(longest.minutes) : '—', sub: longest ? shortDate(longest.date) + ' · ' + (longest.seats.find(s => s.win)?.player || 'geen winnaar') + ' won' : '—' },
+    { label: 'BEGINNER WINT', value: withStarter.length ? pct(starterWins, withStarter.length) + '%' : '—', sub: withStarter.length ? `${starterWins} van ${withStarter.length} potjes` : 'nog niet ingevuld' },
+  ];
+
+  const chips = ['', ...names].map(n => `<a href="#/potjes${n ? '/' + encodeURIComponent(n) : ''}" class="${(who || '') === n ? 'active' : ''}">${n ? esc(n) : 'Alle'}</a>`).join('');
+
+  const card = g => {
+    const winner = g.seats.find(s => s.win);
+    const starter = g.seats.find(s => s.starter);
+    const meta = [
+      g.minutes ? `<span class="chip"><span class="chip-k">DUUR</span>${fmtMinutes(g.minutes)}</span>` : '',
+      starter ? `<span class="chip"><span class="chip-k">BEGON</span>${esc(starter.player.toUpperCase())}</span>` : '',
+    ].join('');
+    const seats = g.seats.map(s => `
+      <div class="seat${s.win ? ' won' : ''}">
+        <span class="seat-mark" aria-hidden="true"></span>
+        <a class="seat-name" href="${playerHref(s.player)}">${esc(s.player)}</a>
+        <span class="seat-cmd"><span class="seat-cmd-name">${esc(s.commander || '—')}</span>${pips(s.colors)}</span>
+        <span class="seat-tags">${s.starter ? '<span class="tag">1E</span>' : ''}${s.win ? '<span class="tag win">WINST</span>' : ''}</span>
+      </div>`).join('');
+    const cotm = g.card ? `
+      <figure class="side-block">
+        <span class="kpi-label">CARD OF THE MATCH</span>
+        <a class="cotm" href="https://scryfall.com/search?q=${encodeURIComponent(g.card)}" target="_blank" rel="noopener">
+          <img src="https://api.scryfall.com/cards/named?fuzzy=${encodeURIComponent(g.card)}&format=image&version=normal" alt="" loading="lazy" onerror="this.remove()">
+          <span>${esc(g.card)}</span>
+        </a>
+      </figure>` : '';
+    const photo = g.photo ? `
+      <figure class="side-block">
+        <span class="kpi-label">FOTO</span>
+        <a class="photo" href="${esc(g.photo.href)}" target="_blank" rel="noopener">
+          <img src="${esc(g.photo.src)}" alt="Foto van potje ${number.get(g.id)}" loading="lazy" referrerpolicy="no-referrer" onerror="this.closest('figure').classList.add('broken')">
+          <span class="photo-err">FOTO NIET OPENBAAR GEDEELD</span>
+        </a>
+      </figure>` : '';
+    return `
+    <article class="panel play${winner ? '' : ' no-winner'}">
+      <header class="play-head">
+        <span class="play-id"><span class="play-no">#${two(number.get(g.id))}</span><span class="play-date">${shortDate(g.date)} ${g.date.slice(0, 4)}</span></span>
+        <span class="play-winner">${winner ? `<span class="chip-k">WINNAAR</span>${esc(winner.player.toUpperCase())}` : '<span class="chip-k">GEEN WINNAAR</span>'}</span>
+        <span class="play-meta">${meta}</span>
+      </header>
+      <div class="play-body${cotm || photo ? '' : ' solo'}">
+        <div class="seats">${seats}</div>
+        ${cotm || photo ? `<aside class="play-side">${photo}${cotm}</aside>` : ''}
+      </div>
+    </article>`;
+  };
+
+  return `
+  <div class="stack">
+    <section class="hero-copy">
+      <span class="eyebrow">&gt; LOGBOEK / ALLE POTJES</span>
+      <h1 class="page-title">Potjes</h1>
+    </section>
+    <section class="kpis small">${kpis.map(k => `
+      <div class="kpi"><span class="kpi-label">${k.label}</span><span class="kpi-value">${esc(k.value)}</span><span class="kpi-sub" title="${esc(k.sub)}">${esc(k.sub)}</span></div>`).join('')}
+    </section>
+    <div class="switcher">${chips}</div>
+    ${list.length ? list.map(card).join('') : '<div class="panel panel-pad"><p class="empty">GEEN POTJES GEVONDEN</p></div>'}
     <p class="source">${esc(CONFIG.source)}</p>
   </div>`;
 }
