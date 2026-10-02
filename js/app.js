@@ -1,5 +1,5 @@
 import { CONFIG } from './config.js';
-import { fetchGames, cachedGames, enrichCommanders, resolveGames } from './data.js';
+import { fetchGames, cachedGames, enrichCommanders, enrichCards, resolveGames } from './data.js';
 import { computeStats, pickSeason } from './stats.js';
 import { header, overview, profile, plays, skeleton, errorPanel } from './render.js';
 import { demoGames } from './demo.js';
@@ -78,6 +78,7 @@ function enrich() {
   enriching = enriching.then(async () => {
     const names = state.games.flatMap(g => g.seats.map(s => s.commander).filter(Boolean));
     if (await enrichCommanders(names)) { enrichTick++; render(); }
+    if (await enrichCards(state.games.map(g => g.card))) { enrichTick++; render(); }
   }).catch(err => console.warn('POD//STATS: Scryfall lookup failed', err)); // keep the chain alive
 }
 

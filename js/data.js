@@ -238,6 +238,7 @@ function toInfo(card) {
     name: card.name.split(' // ')[0],
     colors: orderColors(card.color_identity || []),
     art: face.image_uris?.art_crop || null,
+    image: face.image_uris?.normal || null,
     artist: face.artist || card.artist || '',
     uri: card.scryfall_uri || '',
   };
@@ -251,7 +252,7 @@ async function scry(path) {
     const res = await fetch('https://api.scryfall.com' + path, { headers: { Accept: 'application/json' } }).catch(() => null);
     if (res?.ok) return res.json();
     if (res && (res.status === 404 || res.status === 400)) return null;
-    await sleep(500 * 2 ** attempt);
+    await sleep(1000 * 2 ** attempt);
   }
   throw new Error('Scryfall onbereikbaar');
 }
@@ -287,10 +288,31 @@ export async function enrichCommanders(rawNames) {
   return changed;
 }
 
+// Card of the Match: any card, not just commanders. Looked up once and cached, so the page
+// can load the picture from Scryfall's image CDN instead of hitting the rate-limited API per view.
+const cardKey = name => 'card:' + norm(name);
+export function matchCard(name) { return name ? scryCache[cardKey(name)] || null : null; }
+
+export async function enrichCards(names) {
+  const wanted = [...new Set(names.filter(Boolean))].filter(n => !(cardKey(n) in scryCache) && !missed.has(cardKey(n)));
+  let changed = false;
+  for (const n of wanted) {
+    try {
+      const card = await scry('/cards/named?fuzzy=' + encodeURIComponent(n));
+      // Stored under both the typed and the real name, since games show the real name once resolved.
+      if (card) { const info = toInfo(card); scryCache[cardKey(n)] = scryCache[cardKey(info.name)] = info; changed = true; } else missed.add(cardKey(n));
+    } catch { /* try again on the next visit */ }
+    await sleep(150);
+  }
+  if (changed) save(SCRY_KEY, scryCache);
+  return changed;
+}
+
 // Replace informal commander names with the real card name and colours, once Scryfall has resolved them.
 export function resolveGames(games) {
   return games.map(g => ({
     ...g,
+    card: g.card ? matchCard(g.card)?.name || g.card : null,
     seats: g.seats.map(s => {
       if (!s.commander) return { ...s, colors: [] };
       const parts = splitCommander(s.commander);
