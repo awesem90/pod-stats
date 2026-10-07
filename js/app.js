@@ -9,8 +9,8 @@ const pref = {
 };
 
 const RANGES = ['last10', 'season', 'all'];
-// Each page has its own edition; the profiles and the commander list default to all games.
-const DEFAULT_RANGE = { overview: 'season', player: 'all', commanders: 'all', plays: 'season' };
+// Each page has its own edition; everything but the results page defaults to all games.
+const DEFAULT_RANGE = { overview: 'all', player: 'all', commanders: 'all', plays: 'season' };
 const rangeFor = screen => { const r = pref.get('range:' + screen); return RANGES.includes(r) ? r : DEFAULT_RANGE[screen]; };
 
 const state = {
