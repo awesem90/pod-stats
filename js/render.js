@@ -40,7 +40,9 @@ export function header(st, screen, generated) {
   return `
   <header class="masthead">
     <div class="ears">
-      <p class="ear ear-left">${esc(CONFIG.motto)}</p>
+      ${screen === 'overview'
+        ? `<a class="seal" href="#/"><img src="assets/logo.webp" alt="Groepslogo: Commander? I hardly know her!" width="140" height="140"></a>`
+        : `<p class="ear ear-left">${esc(CONFIG.motto)}</p>`}
       <a class="nameplate" href="#/">${esc(CONFIG.paper)}</a>
       <p class="ear ear-right">${latest ? 'Laatste editie' : 'Ter perse'}<br><span>Weerbericht: kans op boardwipes</span></p>
     </div>
