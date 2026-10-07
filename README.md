@@ -1,45 +1,49 @@
-# POD//STATS
+# The Pod Times
 
-Stats dashboard for our Magic: The Gathering Commander pod. It's a plain static site (HTML, CSS and JS, with no build step). The browser reads the Google Sheet live, so every visit shows the latest games.
+The newspaper of our Magic: The Gathering Commander pod. It's a plain static site (HTML, CSS and JS, with no build step), set like an old broadsheet. All data comes from a BG Stats export.
+
+Live: https://awesem90.github.io/pod-stats/
+
+## Updating the data
+
+1. In BG Stats, export your data (`BGStatsExport.json`).
+2. Run the importer:
+   ```
+   powershell -ExecutionPolicy Bypass -File tools\import-bgstats.ps1 -Export "C:\Users\sem_m\Downloads\BGStatsExport.json"
+   ```
+3. Commit and push `data/pod.json`. GitHub Pages republishes in about a minute.
+
+The importer:
+- keeps only *Magic: The Gathering* plays that have commanders, so Draft games are skipped;
+- reads each player's commander from the BG Stats "role" field, splitting partners on `&` and backgrounds on `with`;
+- takes the winner(s), start player, rounds, duration and location;
+- takes **Card of the Match** from a `Cotm: <card>` line in the play comments. Other comments are private notes and are **not** published;
+- looks up every card once on Scryfall (art, colour identity, card image) and stores the results in `data/pod.json`. Earlier lookups are reused, so the site makes no API calls at runtime.
 
 ## Files
 
 | File | What it does |
 |---|---|
 | `index.html` | Page shell (fonts, CSS, script) |
-| `css/style.css` | All styling (colour tokens at the top) |
-| `js/config.js` | **Settings you're likely to change**: sheet ID, pod name, season, thresholds, name map |
-| `js/data.js` | Fetches and parses the sheet; Scryfall art and colour identity |
-| `js/stats.js` | Every stat (winrate, streaks, rivalries…) as pure functions |
-| `js/render.js` | HTML for the overview and profile screens |
-| `js/app.js` | Routing (`#/`, `#/speler/<naam>`, `#/potjes`, `#/potjes/<naam>`), state, caching |
-| `js/demo.js` | Invented sample data. Open the site with `?demo` to see it |
+| `css/style.css` | All styling (newsprint colour tokens at the top) |
+| `js/config.js` | **Settings**: paper name, motto, season, rank threshold, display toggles |
+| `js/data.js` | Loads `data/pod.json` |
+| `js/stats.js` | Every stat (winrate, streaks, start player, rounds, rivalries…) as pure functions |
+| `js/render.js` | HTML for every page |
+| `js/app.js` | Routing (`#/`, `#/speler/<naam>`, `#/commanders`, `#/potjes`, `#/potjes/<naam>`), editions, caching |
+| `data/pod.json` | The pod's games and card info, made by the importer |
+| `tools/import-bgstats.ps1` | BG Stats export → `data/pod.json` |
+| `tools/serve.ps1` | Local preview at http://localhost:8765/ |
 
-## The spreadsheet
+## Pages
 
-The data comes from the Google Form's response sheet, which must be shared as **Anyone with the link → Viewer**. Each row is one game. Columns are matched by words in the form question:
+- **Voorpagina**: the lead story (generated from the stats), the standings, form, key figures, the rivalry table, "deck or player?", and the commanders above the pod average.
+- **Spelers**: a profile per player, with how often they started and won as starter, rounds per win, fastest win, decks, results against the pod, and recent games.
+- **Commanders**: every commander played, sorted by winrate, with pilots, average rounds and fastest win.
+- **Uitslagen**: every game, with rounds, duration, start player, winner, everyone's commander and the Card of the Match.
 
-| Question | Used for |
-|---|---|
-| *Wie speelde welke commanders?* | Players and commanders, e.g. `Sem - aragorn hero, Toon - Imodane, Patrick Yshtola` or `Mauro (Satoru Umezawa), Raoul (Marchesa, the Black Rose)` |
-| *Wie won?* | The winner. It should match one of the player names |
-| *Wanneer?* | The game date. If empty, the timestamp is used |
-| *Hoe lang duurde de pot?* | Duration (`1:29`), shown in the game log |
-| *Card of the match* | Shown with its card image (Scryfall) on the Potjes page |
-| *Wie begon?* | Who started; tagged `1E` on the Potjes page, plus the "beginner wint" stat |
-| *Foto* | A Google Form file upload or a pasted image link. Drive files must be shared "anyone with the link" |
+The edition switch in the masthead (*Laatste 10 · Seizoen · Alle potjes*) applies to every page. A player needs at least a quarter of the edition's games for a rank (`minGamesShare` in `js/config.js`); players below that are listed without one.
 
-Informal commander names are resolved on [Scryfall](https://scryfall.com): it picks the most popular legal commander matching the text, then falls back to a fuzzy name match. If it picks the wrong card, pin it in `commanderMap` in `js/config.js`. For partners, use `Thrasios + Tymna`.
+## Hosting
 
-## Hosting (GitHub Pages, free)
-
-1. Create a public repo on GitHub, e.g. `pod-stats`.
-2. Push this folder to it.
-3. In the repo, go to **Settings → Pages → Build and deployment**, set Source to *Deploy from a branch*, then choose Branch `main` and folder `/ (root)`.
-4. The site is live at `https://<your-username>.github.io/pod-stats/` within a minute or so.
-
-Every push to `main` redeploys the site automatically.
-
-## Running locally
-
-Any static file server works. ES modules don't load from `file://`, so opening `index.html` directly won't work.
+GitHub Pages serves the `main` branch from the repo root. Every push redeploys the site.

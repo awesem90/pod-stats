@@ -1,422 +1,326 @@
-// HTML for both screens. Everything is built from the stats object.
+// HTML for every page, set like an old broadsheet. Everything is built from the stats object.
 import { CONFIG } from './config.js';
-import { cardInfo, splitCommander, norm, matchCard } from './data.js';
-import { pct, nl1, fmtStreak, shortDate, monthYear, COLOR_NL } from './stats.js';
-
-const MANA = { W: '#F4EBC8', U: '#4FB3FF', B: '#A58CFF', R: '#FF5A4E', G: '#3DDC84' };
-const ACC = '#C8FF2E';
+import { card, norm } from './data.js';
+import { pct, nl1, fmtStreak, fmtMinutes, shortDate, longDate, monthYear, COLOR_NL } from './stats.js';
 
 export const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 export const playerHref = name => '#/speler/' + encodeURIComponent(name);
 const two = n => String(n).padStart(2, '0');
-const above = (v, avg) => v > avg;
+const roman = n => [[10, 'X'], [9, 'IX'], [5, 'V'], [4, 'IV'], [1, 'I']].reduce((s, [v, r]) => { while (n >= v) { s += r; n -= v; } return s; }, '');
+// "Breeches, Brazen Plunderer & Malcolm, Keen-Eyed Navigator" -> "Breeches & Malcolm"
+const shortName = parts => (parts || []).map(p => p.split(',')[0]).join(' & ');
+const rounds = n => n + (n === 1 ? ' ronde' : ' ronden');
+const scope = st => st.range === 'all' ? 'over alle potjes gemeten' : st.range === 'last10' ? `over de laatste ${st.games.length} potjes` : `in seizoen ${st.season}`;
 
-function pips(colors, lg = false) {
-  if (!CONFIG.showMana || !colors || !colors.length) return '';
-  const size = lg ? 8 : 6;
-  return `<span class="pips${lg ? ' lg' : ''}">${colors.map(c =>
-    `<span class="pip" style="background:${MANA[c]};box-shadow:0 0 ${size}px ${MANA[c]}" title="${COLOR_NL[c]}"></span>`).join('')}</span>`;
+function mana(colors) {
+  if (!colors || !colors.length) return '';
+  return `<span class="mana">${colors.map(c => `<abbr class="m m-${c}" title="${COLOR_NL[c]}">${c}</abbr>`).join('')}</span>`;
 }
 
-function art(commander, idx = '') {
+// A commander's art printed as a halftone newspaper photo, with its credit line.
+function photo(parts, { caption = '', size = '' } = {}) {
   if (!CONFIG.showArtwork) return '';
-  const info = splitCommander(commander).map(cardInfo).find(i => i && i.art);
-  const idxHtml = idx ? `<span class="art-idx">${esc(idx)}</span>` : '';
-  if (!info) return `<div class="art">${idxHtml}<span class="art-label">[ ARTWORK ]</span></div>`;
-  return `<div class="art">
-    <span class="art-label">[ ARTWORK ]</span>
-    <img src="${esc(info.art)}" alt="" loading="lazy" onload="this.classList.add('loaded');this.parentNode.classList.add('has-img')" onerror="this.remove()">
-    ${idxHtml}
-    ${info.artist ? `<a class="art-credit" href="${esc(info.uri)}" target="_blank" rel="noopener">ART: ${esc(info.artist.toUpperCase())}</a>` : ''}
-  </div>`;
+  const info = (parts || []).map(card).find(i => i && i.art);
+  if (!info) return '';
+  return `<figure class="photo ${size}">
+    <a class="halftone" href="${esc(info.uri)}" target="_blank" rel="noopener"><img src="${esc(info.art)}" alt="" loading="lazy" onerror="this.closest('figure').remove()"></a>
+    <figcaption>${caption ? esc(caption) + ' ' : ''}<span class="credit">Illustratie: ${esc(info.artist)} / Scryfall</span></figcaption>
+  </figure>`;
 }
 
-const streakTag = s => `<span class="streak-tag ${s > 0 ? 'pos' : s < 0 ? 'neg' : ''}">${fmtStreak(s)}</span>`;
-const record = (w, g) => `${w}W–${g - w}L · ${g}`;
+const sectionHead = (title, extra = '') => `<h2 class="section-head"><span>${title}</span>${extra}</h2>`;
 
-function segBar(v, avg) {
-  const on = Math.min(20, Math.round(v / 40 * 20));
-  return `<span class="seg${above(v, avg) ? ' hi' : ''}">${Array.from({ length: 20 }, (_, i) => `<span${i < on ? ' class="on"' : ''}></span>`).join('')}</span>`;
-}
-
-function barRow(name, v, { max, hi, wide = false }) {
-  const w = Math.round(Math.min(100, v / max * 100));
-  return `<span class="bar-row${wide ? ' wide' : ''}${hi ? ' hi' : ''}">
-    <span class="bar-name" title="${esc(name)}">${esc(name)}</span>
-    <span class="bar-track"><span class="bar-fill" style="width:${w}%"></span></span>
-    <span class="bar-val">${v}%</span>
-  </span>`;
-}
-
-// ---------- Header ----------
-export function header(st, screen) {
-  const status = st
-    ? `S${String(st.season).slice(-2)} · ${st.games.length} POTJES · ${st.players.length} SPELERS`
-    : 'LADEN…';
+// ---------- Masthead ----------
+export function header(st, screen, generated) {
+  const latest = st?.allGames.length ? st.allGames[st.allGames.length - 1].date : null;
+  const firstYear = st?.allGames.length ? +st.allGames[0].date.slice(0, 4) : new Date().getFullYear();
+  const vol = st ? roman(st.season - firstYear + 1) : 'I';
+  const nav = [['overview', '#/', 'Voorpagina'], ['player', '#/speler', 'Spelers'], ['commanders', '#/commanders', 'Commanders'], ['plays', '#/potjes', 'Uitslagen']];
+  const editions = [['last10', 'Laatste ' + CONFIG.lastN], ['season', 'Seizoen ' + (st?.season || '')], ['all', 'Alle potjes']];
   return `
-  <header class="topbar">
-    <a class="logo" href="#/" aria-label="POD//STATS, naar overzicht">
-      <span class="logo-bars">${Object.values(MANA).map(c => `<span style="background:${c}"></span>`).join('')}</span>
-      <span class="logo-text">POD<span>//</span>STATS</span>
-    </a>
-    <nav class="nav">
-      <a href="#/" class="${screen === 'overview' ? 'active' : ''}">Overzicht</a>
-      <a href="#/speler" class="${screen === 'player' ? 'active' : ''}">Speler</a>
-      <a href="#/potjes" class="${screen === 'plays' ? 'active' : ''}">Potjes</a>
-    </nav>
-    <div class="status"><span class="status-dot"></span>${status}</div>
+  <header class="masthead">
+    <div class="ears">
+      <p class="ear ear-left">${esc(CONFIG.motto)}</p>
+      <a class="nameplate" href="#/">${esc(CONFIG.paper)}</a>
+      <p class="ear ear-right">${latest ? 'Laatste editie' : 'Ter perse'}<br><span>Weerbericht: kans op boardwipes</span></p>
+    </div>
+    <div class="dateline">
+      <span>VOL. ${vol} … No. ${st ? st.allGames.length : '—'}</span>
+      <span class="dateline-date">${esc(CONFIG.city)}, ${latest ? longDate(latest).toUpperCase() : 'LADEN…'}</span>
+      <span>${esc(CONFIG.price)}</span>
+    </div>
+    <nav class="sections" aria-label="Rubrieken">${nav.map(([key, href, label]) => `<a href="${href}" class="${screen === key ? 'active' : ''}">${label}</a>`).join('')}</nav>
+    ${st ? `<div class="edition" role="group" aria-label="Editie"><span>Editie:</span>${editions.map(([key, label]) =>
+      `<button data-range="${key}" class="${st.range === key ? 'active' : ''}" aria-pressed="${st.range === key}">${esc(label)}</button>`).join('')}</div>` : ''}
   </header>`;
 }
 
-// ---------- Overview ----------
-export function overview(st, range) {
-  const { avg } = st;
-  const L = st.players[0];
-  const lopend = st.season === new Date().getFullYear();
-  const rangeLabel = range === 'last10' ? `laatste ${st.games.length} · seizoen ${st.season}` : `seizoen ${st.season}`;
+export function footer(generated) {
+  return `<footer class="colophon">Gezet uit de BG Stats-export${generated ? ' van ' + esc(generated) : ''}. Kaartbeelden via Scryfall; Magic: The Gathering © Wizards of the Coast.</footer>`;
+}
 
-  const leader = L ? `
-    <a class="leader featured" href="${playerHref(L.name)}">
-      <span class="leader-top">
-        <span>RANK 01 · POD-LEIDER</span>
-        <span class="leader-streak"><span class="pulse-dot"></span>STREAK ${fmtStreak(L.streak)}</span>
-      </span>
-      <span class="leader-mid">
-        <span class="leader-id">
-          <span class="leader-name">${esc(L.name)}</span>
-          <span class="leader-deck">${esc(L.mainDeck || '—')}</span>
-        </span>
-        <span class="leader-rate">${L.rate}%</span>
-      </span>
-      <span class="ticks" style="grid-template-columns:repeat(${L.results.length},minmax(0,1fr))">
-        ${L.results.map(w => `<span${w ? ' class="on"' : ''}></span>`).join('')}
-      </span>
-      <span class="leader-foot">${L.wins} WINST / ${L.games} POTJES · POD-GEMIDDELDE ${nl1(avg)}%</span>
-    </a>` : `<div class="leader featured"><span class="empty">NOG GEEN POTJES IN DIT SEIZOEN</span></div>`;
+// ---------- Front page ----------
+function headline(st) {
+  const [L, second] = st.ranked;
+  if (!L) return 'Nog geen potjes in deze editie';
+  if (L.streak >= 3) return `${L.name} onstuitbaar: ${L.streak} zeges op rij`;
+  if (second && L.rate - second.rate >= 10) return `${L.name} ruim aan kop in de pod`;
+  if (second) return `${L.name} aan kop, ${second.name} op de hielen`;
+  return `${L.name} voert de pod aan`;
+}
 
-  const kpis = [
-    { label: 'POTJES GELOGD', value: st.games.length, sub: rangeLabel + ' · via spreadsheet' },
-    { label: 'SPELERS', value: st.players.length, sub: `gemiddeld ${nl1(st.avgSeats)} aan tafel` },
-    { label: 'UNIEKE COMMANDERS', value: st.uniqueCommanders, sub: 'uit de pod-spreadsheet' },
-    { label: 'LANGSTE STREAK', value: st.longest ? st.longest.streak : 0, sub: st.longest ? `${st.longest.name} · nog lopend` : 'geen lopende winstreeks' },
+function standingsTable(st) {
+  return `<table class="agate standings">
+    <thead><tr><th>#</th><th class="l">Speler</th><th title="Potjes">P</th><th title="Gewonnen">W</th><th>%</th><th>Reeks</th></tr></thead>
+    <tbody>${st.players.map(p => `
+      <tr class="${p.rank === 1 ? 'lead-row' : p.rank ? '' : 'unranked'}"><td>${p.rank || '—'}</td><td class="l"><a href="${playerHref(p.name)}">${esc(p.name)}</a></td>
+      <td>${p.games}</td><td>${p.wins}</td><td class="b">${p.rate}</td><td>${fmtStreak(p.streak)}</td></tr>`).join('')}</tbody>
+  </table>
+  <p class="agate-note">Pod-gemiddelde: ${nl1(st.avg)}% winst per stoel.${st.ranked.length < st.players.length ? ` Een rang vraagt minstens ${st.minGames} potjes.` : ''}</p>`;
+}
+
+export function overview(st) {
+  const L = st.ranked[0];
+  const second = st.ranked[1];
+  const fw = st.fastestWin;
+  const verdict = st.starterRate > st.starterChance + 8 ? 'Een duidelijk voordeel voor wie mag beginnen.'
+    : st.starterRate < st.starterChance - 8 ? 'Beginnen lijkt eerder een nadeel te zijn.' : 'Van een echt voordeel is nauwelijks sprake.';
+
+  const story = L ? `
+    <p><span class="city">${esc(CONFIG.city)}</span> — ${esc(L.name)} staat ${scope(st)} bovenaan de pod. In ${L.games} potjes boekte ${esc(L.name)} ${L.wins} overwinning${L.wins === 1 ? '' : 'en'}, goed voor een winrate van ${L.rate}%, tegen een pod-gemiddelde van ${nl1(st.avg)}%.${L.mainDeck ? ` De vaste commander: ${esc(L.mainDeck)}.` : ''}</p>
+    ${second ? `<p>Op de tweede plaats volgt ${esc(second.name)} met ${second.rate}% uit ${second.games} potjes${second.streak >= 2 ? `, al ${second.streak} keer op rij winnend` : ''}.</p>` : ''}
+    ${st.starterGames ? `<p>Wie begint, wint vaker? Van de ${st.starterGames} potjes waarin bekend is wie begon, won de beginnende speler er ${st.starterWins}: ${st.starterRate}%. Op puur toeval zou dat ${Math.round(st.starterChance)}% zijn. ${verdict}</p>` : ''}
+    ${st.roundGames ? `<p>Een potje duurt gemiddeld ${nl1(st.avgRounds)} ronden${st.avgMinutes ? ` en ${fmtMinutes(st.avgMinutes)}` : ''}.${fw ? ` De snelste overwinning kwam van ${esc(fw.player)}${fw.commander ? ` met ${esc(fw.commander)}` : ''}: ${rounds(fw.rounds)}, op ${longDate(fw.date)}.` : ''}</p>` : ''}`
+    : '<p>Er zijn in deze editie nog geen potjes gespeeld.</p>';
+
+  const facts = [
+    ['Potjes gespeeld', st.games.length],
+    ['Spelers', st.players.length],
+    ['Gemiddeld aan tafel', nl1(st.avgSeats)],
+    ['Verschillende commanders', st.uniqueCommanders],
+    ['Gemiddeld aantal ronden', st.roundGames ? nl1(st.avgRounds) : '—'],
+    ['Gemiddelde duur', st.avgMinutes ? fmtMinutes(st.avgMinutes) : '—'],
+    ['Beginner wint', st.starterGames ? `${st.starterRate}%` : '—'],
+    ['Langste lopende reeks', st.longest ? `${st.longest.streak} (${esc(st.longest.name)})` : '—'],
+    ['Snelste winst', fw ? `${rounds(fw.rounds)} (${esc(fw.player)})` : '—'],
+    ['Langste potje', st.longestGame ? `${fmtMinutes(st.longestGame.minutes)} (${shortDate(st.longestGame.date)})` : '—'],
   ];
 
-  const standings = st.players.map((p, i) => `
-    <a class="standing" href="${playerHref(p.name)}">
-      <span class="rank${i === 0 ? ' first' : ''}">${two(i + 1)}</span>
-      <span class="who">
-        <span class="who-line"><span class="who-name">${esc(p.name)}</span>${pips(p.mainColors)}</span>
-        <span class="who-deck">${esc(p.mainDeck || '—')}</span>
-      </span>
-      <span class="seg-wrap">${segBar(p.rate, avg)}<span class="record">${p.wins}W / ${p.games - p.wins}L</span></span>
-      <span class="rate-col"><span class="rate${above(p.rate, avg) ? ' hi' : ''}">${p.rate}%</span>${streakTag(p.streak)}</span>
-    </a>`).join('');
-
   const form = st.players.map(p => `
-    <div class="form-row">
-      <span class="form-id"><span class="form-name">${esc(p.name)}</span><span class="form-note">${esc(p.formNote)}</span></span>
-      <span class="marks">${Array.from({ length: 5 - p.form.length }, () => '<span class="none"></span>').join('')}${p.form.map(w => `<span${w ? ' class="w"' : ''}></span>`).join('')}</span>
-    </div>`).join('');
-
-  const commanders = st.strong.length ? `<div class="tiles tiles-240">${st.strong.map((c, i) => `
-    <article class="tile${i === 0 ? ' top' : ''}">
-      ${art(c.name, 'CMD_' + two(i + 1))}
-      <div class="tile-body">
-        <span class="tile-head"><span class="tile-name">${esc(c.name)}</span>${pips(c.colors, true)}</span>
-        <span class="tile-sub">${esc(c.pilotList.map(p => p.name).join(', '))}${c.archetype ? ' · ' + esc(c.archetype) : ''}</span>
-        <span class="tile-foot"><span class="tile-rate">${c.rate}%</span><span class="tile-rec">${record(c.wins, c.games)}</span></span>
-      </div>
-    </article>`).join('')}</div>`
-    : `<p class="empty">NOG GEEN COMMANDER MET MIN. ${CONFIG.minCommanderGames} POTJES BOVEN HET POD-GEMIDDELDE</p>`;
-
-  const shared = st.shared.length ? st.shared.map(c => `
-    <div class="group">
-      <span class="group-head"><span class="group-name">${esc(c.name)}</span><span class="caption">${c.games} POTJES</span></span>
-      ${c.pilotList.map(p => { const v = pct(p.wins, p.games); return barRow(p.name, v, { max: 40, hi: above(v, avg) }); }).join('')}
-    </div>`).join('')
-    : `<p class="empty">NOG GEEN COMMANDER DIE DOOR 2+ SPELERS IS GESPEELD</p>`;
+    <li><a href="${playerHref(p.name)}">${esc(p.name)}</a>
+      <span class="form-letters">${p.form.map(w => w ? '<b>W</b>' : 'V').join(' ')}</span>
+      <em>${esc(p.formNote)}</em></li>`).join('');
 
   const n = st.names.length;
-  const cols = `grid-template-columns:60px repeat(${n},minmax(38px,1fr))`;
-  const rivalry = !CONFIG.showRivalry ? '' : `
-    <div class="panel panel-pad">
-      <div class="stack" style="gap:8px">
-        <h2 class="h2">Rivaliteiten</h2>
-        <p class="helper">Winrate van de speler in de rij wanneer de speler in de kolom ook aan tafel zit.</p>
-      </div>
-      ${n < 2 ? '<p class="empty">TE WEINIG SPELERS VOOR EEN MATRIX</p>' : `
-      <div class="matrix-wrap"><div class="matrix">
-        <div class="m-row" style="${cols}"><span></span>${st.names.map(x => `<span class="m-head" title="${esc(x)}">${esc(x.slice(0, 3).toUpperCase())}</span>`).join('')}</div>
-        ${st.matrix.map(row => `
-        <div class="m-row" style="${cols}">
-          <span class="m-name" title="${esc(row.name)}">${esc(row.name)}</span>
-          ${row.cells.map(c => {
-            if (!c) return '<span class="m-cell diag">—</span>';
-            if (!c.games) return '<span class="m-cell diag" title="Nooit samen aan tafel">·</span>';
-            const t = Math.min(1, Math.max(0, (c.rate - 8) / 32));
-            return `<span class="m-cell" title="${esc(row.name)} vs ${esc(c.vs)}: ${c.rate}% in ${c.games} potjes" style="background:rgba(200,255,46,${(0.03 + t * 0.55).toFixed(2)});border-color:rgba(200,255,46,${(0.08 + t * 0.4).toFixed(2)});color:${t > 0.6 ? '#06070A' : '#C5CCD6'}">${c.rate}%</span>`;
-          }).join('')}
-        </div>`).join('')}
-      </div></div>`}
-      ${st.rivalries.length ? `<div class="callouts">${st.rivalries.map(r => `<p class="callout"><span class="prompt">&gt;</span><span>${esc(r)}</span></p>`).join('')}</div>` : ''}
-    </div>`;
+  const matrix = !CONFIG.showRivalry ? '' : `
+    <section class="col">
+      ${sectionHead('Rivaliteiten')}
+      <p class="small">Winrate van de speler in de rij als de speler in de kolom ook aan tafel zit.</p>
+      ${n < 2 ? '<p class="small">Te weinig spelers voor een tabel.</p>' : `
+      <div class="scroll"><table class="agate matrix">
+        <thead><tr><th></th>${st.names.map(x => `<th title="${esc(x)}">${esc(x.slice(0, 3))}</th>`).join('')}</tr></thead>
+        <tbody>${st.matrix.map(row => `<tr><th class="l">${esc(row.name)}</th>${row.cells.map(c => {
+          if (!c) return '<td class="diag">—</td>';
+          if (!c.games) return '<td class="diag" title="Nooit samen aan tafel">·</td>';
+          const t = Math.min(1, Math.max(0, (c.rate - 8) / 40));
+          return `<td title="${esc(row.name)} met ${esc(c.vs)}: ${c.rate}% in ${c.games} potjes" style="background:rgba(26,24,20,${(t * 0.85).toFixed(2)});color:${t > 0.55 ? '#F3EEE2' : 'inherit'}">${c.rate}</td>`;
+        }).join('')}</tr>`).join('')}</tbody>
+      </table></div>`}
+    </section>`;
+
+  const strong = st.strong.length ? `<div class="features">${st.strong.slice(0, 4).map(c => `
+    <article class="feature">
+      ${photo(c.parts, { size: 'small' })}
+      <h3><a href="#/commanders">${esc(c.name)}</a></h3>
+      <p class="byline">${esc(c.pilotList.map(p => p.name).join(', '))} ${mana(c.colors)}</p>
+      <p class="feature-stat"><b>${c.rate}%</b> · ${c.wins}W–${c.games - c.wins}V in ${c.games} potjes</p>
+    </article>`).join('')}</div>`
+    : `<p class="small">Nog geen commander met minstens ${CONFIG.minCommanderGames} potjes boven het pod-gemiddelde.</p>`;
+
+  const shared = st.shared.length ? st.shared.slice(0, 6).map(c => `
+    <div class="duel">
+      <h3>${esc(c.name)} <span class="small">· ${c.games} potjes</span></h3>
+      ${c.pilotList.map(p => { const v = pct(p.wins, p.games); return `
+        <div class="bar-row"><span class="bar-name">${esc(p.name)}</span><span class="bar"><span style="width:${Math.min(100, v)}%"></span></span><span class="bar-val">${v}% <span class="small">(${p.wins}/${p.games})</span></span></div>`; }).join('')}
+    </div>`).join('')
+    : '<p class="small">Nog geen commander die door twee spelers is gespeeld.</p>';
 
   return `
-  <div class="stack">
-    <section class="hero">
-      <div class="hero-left">
-        <div class="hero-copy">
-          <span class="eyebrow">&gt; SEIZOEN ${st.season} / ${lopend ? 'LOPEND' : 'AFGESLOTEN'}</span>
-          <h1>${CONFIG.podName.map(esc).join('<br>')}</h1>
-          <p>${esc(CONFIG.tagline)}</p>
-        </div>
-        <div class="range" role="group" aria-label="Periode">
-          <button data-range="last10" class="${range === 'last10' ? 'active' : ''}" aria-pressed="${range === 'last10'}">Laatste ${CONFIG.lastN}</button>
-          <button data-range="season" class="${range === 'season' ? 'active' : ''}" aria-pressed="${range === 'season'}">Heel seizoen</button>
-        </div>
-      </div>
-      ${leader}
+  <div class="page">
+    <section class="front">
+      <article class="lead-story">
+        <p class="kicker">${st.range === 'all' ? 'Alle potjes' : st.range === 'last10' ? 'De laatste ' + st.games.length + ' potjes' : 'Seizoen ' + st.season}</p>
+        <h1 class="headline">${esc(headline(st))}</h1>
+        <p class="deck">${L ? `Winrate van ${L.rate}% na ${L.games} potjes; beginnende speler wint ${st.starterRate}%` : ''}</p>
+        <p class="byline">Door onze statistiekredactie</p>
+        ${L ? photo(L.mainParts, { caption: `${L.name} speelde het vaakst met ${L.mainDeck}.`, size: 'lead' }) : ''}
+        <div class="story">${story}</div>
+      </article>
+      <aside class="col rule-left">
+        ${sectionHead('De stand')}
+        ${standingsTable(st)}
+        ${sectionHead('In vorm', '<span class="small">laatste 5, oudste links</span>')}
+        <ul class="form-list">${form}</ul>
+      </aside>
     </section>
 
-    <section class="kpis">${kpis.map(k => `
-      <div class="kpi"><span class="kpi-label">${k.label}</span><span class="kpi-value">${k.value}</span><span class="kpi-sub">${esc(k.sub)}</span></div>`).join('')}
-    </section>
-
-    <section class="row row-340">
-      <div class="panel span-2">
-        <div class="panel-head"><h2 class="h2">Pod-standen</h2><span class="caption">WINRATE · KLIK VOOR PROFIEL</span></div>
-        ${standings || '<p class="empty" style="padding:16px 22px">NOG GEEN POTJES</p>'}
-      </div>
-      <div class="panel form-panel">
-        <h2 class="h2 panel-head">Vorm &amp; streaks</h2>
-        ${form}
-        <span class="foot-note">LAATSTE 5 · OUDSTE LINKS · GROEN = WINST</span>
-      </div>
-    </section>
-
-    <section class="panel panel-pad" style="gap:16px">
-      <div style="display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:10px">
-        <h2 class="h2">Commanders boven pod-gemiddelde</h2>
-        <span class="caption">MIN. ${CONFIG.minCommanderGames} POTJES · &gt; ${nl1(avg)}%</span>
-      </div>
-      ${commanders}
-    </section>
-
-    <section class="row row-340">
-      <div class="panel panel-pad">
-        <div class="stack" style="gap:8px">
-          <h2 class="h2">Het deck of de speler?</h2>
-          <p class="helper">Dezelfde commander, andere piloot. Waar de balken uiteenlopen, zit het verschil in de speler.</p>
-        </div>
+    <section class="three">
+      <section class="col">
+        ${sectionHead('Kerncijfers')}
+        <dl class="facts">${facts.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl>
+      </section>
+      ${matrix}
+      <section class="col">
+        ${sectionHead('Het deck of de speler?')}
+        <p class="small">Dezelfde commander, een andere piloot. Waar de balken uiteenlopen, zit het verschil in de speler.</p>
         ${shared}
-      </div>
-      ${rivalry}
+      </section>
     </section>
 
-    <p class="source">${esc(CONFIG.source)}</p>
+    ${st.rivalries.length ? `<section class="quotes">${st.rivalries.map(r => `<blockquote>${esc(r)}</blockquote>`).join('')}</section>` : ''}
+
+    <section>
+      ${sectionHead('Commanders boven het gemiddelde', `<a class="more" href="#/commanders">Alle commanders →</a>`)}
+      ${strong}
+    </section>
   </div>`;
 }
 
 // ---------- Player profile ----------
 export function profile(st, name) {
-  const { avg } = st;
-  const p = st.players.find(x => x.name === name);
-  const switcher = st.players.map(x => `<a href="${playerHref(x.name)}" class="${p && x.name === p.name ? 'active' : ''}">${esc(x.name)}</a>`).join('');
-  const toolbar = `
-    <div class="toolbar">
-      <a class="back" href="#/">&lt; OVERZICHT</a>
-      <div class="switcher">${switcher}</div>
-    </div>`;
-  if (!p) return `<div class="stack">${toolbar}<div class="panel panel-pad"><p class="empty">${esc((name || '').toUpperCase())} HEEFT GEEN POTJES IN DEZE SELECTIE</p></div></div>`;
+  const p = st.players.find(x => norm(x.name) === norm(name));
+  const switcher = `<nav class="switcher">${st.players.map(x => `<a href="${playerHref(x.name)}" class="${p && x.name === p.name ? 'active' : ''}">${esc(x.name)}</a>`).join('')}</nav>`;
+  if (!p) return `<div class="page">${switcher}<p class="small">${esc(name || '')} speelde geen potjes in deze editie.</p></div>`;
 
-  const decks = [...p.decks.values()].map(d => ({ ...d, rate: pct(d.wins, d.games), exact: d.wins / d.games, archetype: mostCommon(d.archetypes) }))
+  const decks = [...p.decks.values()].map(d => ({ ...d, rate: pct(d.wins, d.games), exact: d.wins / d.games }))
     .sort((a, b) => b.games - a.games || b.exact - a.exact);
-  const best = decks.slice().sort((a, b) => b.exact - a.exact || b.games - a.games)[0];
+  // One lucky game shouldn't make a "best deck": prefer decks played at least twice.
+  const tried = decks.filter(d => d.games >= 2);
+  const best = (tried.length ? tried : decks).slice().sort((a, b) => b.exact - a.exact || b.games - a.games)[0];
   const fav = Object.keys(p.colorGames).sort((a, b) => p.colorGames[b] - p.colorGames[a])[0];
   const since = st.firstSeen[p.name];
-  const periodWord = st.range === 'last10' ? 'in de laatste ' + st.games.length : 'dit seizoen';
 
-  const stats = [
-    { label: 'POTJES', value: p.games, sub: periodWord + ' gelogd' },
-    { label: 'OVERWINNINGEN', value: p.wins, sub: 'pod-gemiddelde is ' + nl1(st.avgWinsPerPlayer) },
-    { label: 'BESTE DECK', value: best ? best.rate + '%' : '—', sub: best ? best.name : 'geen commander ingevuld' },
-    { label: 'FAVORIETE KLEUR', value: fav ? COLOR_NL[fav] : '—', sub: decks.length + (decks.length === 1 ? ' deck' : ' decks') + ' in rotatie' },
+  const facts = [
+    ['Potjes', p.games],
+    ['Overwinningen', `${p.wins} (pod-gemiddelde ${nl1(st.avgWinsPerPlayer)})`],
+    ['Begonnen', p.starts ? `${p.starts}×, waarvan ${p.startWins} gewonnen (${pct(p.startWins, p.starts)}%)` : '—'],
+    ['Gemiddeld ronden per winst', p.winRounds ? nl1(p.winRounds) : '—'],
+    ['Snelste winst', p.fastest ? `${rounds(p.fastest.rounds)}, ${shortDate(p.fastest.date)}` : '—'],
+    ['Beste deck', best ? `${esc(best.name)} (${best.rate}%)` : '—'],
+    ['Favoriete kleur', fav ? COLOR_NL[fav] : '—'],
   ];
 
-  const vs = st.matrix.find(r => r.name === p.name).cells.filter(c => c && c.games)
-    .map(c => barRow(c.vs, c.rate, { max: 45, hi: c.rate >= 30, wide: true })).join('');
+  const vs = st.matrix.find(r => r.name === p.name).cells.filter(c => c && c.games).sort((a, b) => b.rate - a.rate);
 
-  const log = p.log.slice(-6).reverse().map(({ game, seat }) => {
-    const others = game.seats.filter(s => s.player !== p.name).map(s => s.player);
-    return `
-    <div class="log-row">
-      <span class="log-date">${shortDate(game.date)}</span>
-      <span class="log-mid">
-        <span class="log-deck">${esc(seat.commander || '—')}</span>
-        <span class="log-table">met ${esc(others.join(' · '))}${game.minutes ? ' · ' + fmtMinutes(game.minutes) : ''}</span>
-      </span>
-      <span class="result${seat.win ? ' w' : ''}">${seat.win ? 'WINST' : 'VERLIES'}</span>
-    </div>`;
-  }).join('');
+  const log = p.log.slice(-8).reverse().map(({ game, seat }) => `
+    <tr><td>${shortDate(game.date)}</td><td class="l">${esc(seat.commander || '—')}</td>
+    <td>${game.rounds || '—'}</td><td>${seat.starter ? '◆' : ''}</td><td class="b">${seat.win ? 'W' : 'V'}</td></tr>`).join('');
 
   return `
-  <div class="stack">
-    ${toolbar}
-    <section class="profile-head featured">
-      <div class="profile-id">
-        <span class="eyebrow">&gt; SPELERPROFIEL / RANK ${two(p.rank)}</span>
-        <h1>${esc(p.name)}</h1>
-        <span class="profile-sub">${since ? 'Vaste speler sinds ' + monthYear(since) + ' · ' : ''}${p.games} potjes ${periodWord}</span>
-      </div>
-      <div class="readouts">
-        <span class="readout"><span class="kpi-label">WINRATE</span><span class="readout-val acc">${p.rate}%</span></span>
-        <span class="readout"><span class="kpi-label">STREAK</span><span class="readout-val">${fmtStreak(p.streak)}</span></span>
-      </div>
+  <div class="page">
+    ${switcher}
+    <section class="front">
+      <article class="lead-story">
+        <p class="kicker">Spelersprofiel · ${p.rank ? 'rang ' + two(p.rank) : `zonder rang (minder dan ${st.minGames} potjes)`}</p>
+        <h1 class="headline">${esc(p.name)}</h1>
+        <p class="deck">Winrate ${p.rate}% ${scope(st)}, huidige reeks ${fmtStreak(p.streak)}${since ? `. Speelt mee sinds ${monthYear(since)}` : ''}.</p>
+        <dl class="facts wide">${facts.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl>
+        ${sectionHead('Decks')}
+        <table class="agate">
+          <thead><tr><th class="l">Commander</th><th>P</th><th>W</th><th>%</th></tr></thead>
+          <tbody>${decks.map(d => `<tr><td class="l">${esc(d.name)} ${mana(d.colors)}</td><td>${d.games}</td><td>${d.wins}</td><td class="b">${d.rate}</td></tr>`).join('')}</tbody>
+        </table>
+        ${sectionHead('Laatste potjes', `<a class="more" href="#/potjes/${encodeURIComponent(p.name)}">Alle uitslagen →</a>`)}
+        <table class="agate">
+          <thead><tr><th>Datum</th><th class="l">Commander</th><th>Rnd</th><th title="Begon">Start</th><th>Uitslag</th></tr></thead>
+          <tbody>${log}</tbody>
+        </table>
+      </article>
+      <aside class="col rule-left">
+        ${photo(p.mainParts, { caption: p.mainDeck ? `Vaste commander: ${p.mainDeck}.` : '' })}
+        ${sectionHead('Tegen de pod')}
+        <p class="small">Winrate als deze speler ook aan tafel zit.</p>
+        <table class="agate"><tbody>${vs.map(c => `<tr><td class="l"><a href="${playerHref(c.vs)}">${esc(c.vs)}</a></td><td class="b">${c.rate}%</td><td class="small">${c.games} potjes</td></tr>`).join('')}</tbody></table>
+      </aside>
     </section>
+  </div>`;
+}
 
-    <section class="kpis small">${stats.map(s => `
-      <div class="kpi"><span class="kpi-label">${s.label}</span><span class="kpi-value">${esc(s.value)}</span><span class="kpi-sub" title="${esc(s.sub)}">${esc(s.sub)}</span></div>`).join('')}
-    </section>
-
-    <section class="panel panel-pad" style="gap:16px">
-      <h2 class="h2">Decks</h2>
-      ${decks.length ? `<div class="tiles tiles-230">${decks.map(d => `
-        <article class="tile">
-          ${art(d.name)}
-          <div class="tile-body">
-            <span class="tile-head"><span class="tile-name">${esc(d.name)}</span>${pips(d.colors, true)}</span>
-            <span class="tile-sub">${esc(d.archetype || ' ')}</span>
-            <span class="tile-foot"><span class="tile-rate${above(d.rate, avg) ? ' hi' : ''}">${d.rate}%</span><span class="tile-rec">${record(d.wins, d.games)}</span></span>
-          </div>
-        </article>`).join('')}</div>` : '<p class="empty">GEEN COMMANDERS INGEVULD</p>'}
-    </section>
-
-    <section class="row row-320">
-      <div class="panel panel-pad" style="gap:16px">
-        <h2 class="h2">Tegen de pod</h2>
-        ${vs || '<p class="empty">NOG NIET SAMEN MET ANDEREN GESPEELD</p>'}
-        <span class="foot-note">WINRATE WANNEER DEZE SPELER OOK AAN TAFEL ZIT</span>
-      </div>
-      <div class="panel log-panel">
-        <div class="panel-head"><h2 class="h2">Laatste potjes</h2><a class="caption" href="#/potjes/${encodeURIComponent(p.name)}">ALLE POTJES &gt;</a></div>
-        ${log}
-      </div>
-    </section>
-
-    <p class="source">${esc(CONFIG.source)}</p>
+// ---------- All commanders ----------
+export function commanders(st) {
+  const rows = st.commanders.map(c => {
+    const thumb = c.parts.map(card).find(i => i && i.art);
+    return `
+    <tr>
+      <td>${c.rank}</td>
+      <td class="thumb-cell">${thumb && CONFIG.showArtwork ? `<span class="halftone thumb"><img src="${esc(thumb.art)}" alt="" loading="lazy"></span>` : ''}</td>
+      <td class="l"><a class="cmd-name" href="${esc(thumb?.uri || '#/commanders')}" target="_blank" rel="noopener">${esc(c.name)}</a> ${mana(c.colors)}
+        <span class="pilots">${c.pilotList.map(p => `<a href="${playerHref(p.name)}">${esc(p.name)}</a>${c.pilotList.length > 1 ? ` (${p.wins}/${p.games})` : ''}`).join(', ')}</span></td>
+      <td>${c.games}</td><td>${c.wins}</td><td class="b">${c.rate}</td>
+      <td class="opt">${c.rounds.length ? nl1(c.avgRounds) : '—'}</td>
+      <td class="opt">${c.fastest ? c.fastest.rounds : '—'}</td>
+    </tr>`;
+  }).join('');
+  return `
+  <div class="page">
+    <p class="kicker">Overzicht</p>
+    <h1 class="headline">De commanders, van sterk naar zwak</h1>
+    <p class="deck">Alle ${st.commanders.length} gespeelde commanders ${scope(st)}, gerangschikt op winrate. Bij gelijke stand gaat het meest gespeelde deck voor.</p>
+    <table class="agate commanders-table">
+      <thead><tr><th>#</th><th class="thumb-cell"></th><th class="l">Commander en piloten</th><th title="Potjes">P</th><th title="Gewonnen">W</th><th>%</th>
+        <th class="opt" title="Gemiddeld aantal ronden">Rnd</th><th class="opt" title="Snelste winst in ronden">Snelst</th></tr></thead>
+      <tbody>${rows || '<tr><td colspan="8">Geen commanders in deze editie.</td></tr>'}</tbody>
+    </table>
+    <p class="agate-note">P = potjes, W = gewonnen, Rnd = gemiddeld aantal ronden, Snelst = snelste winst in ronden. Pod-gemiddelde: ${nl1(st.avg)}%.</p>
   </div>`;
 }
 
 // ---------- All plays ----------
 export function plays(st, filter) {
-  const all = st.allGames.slice().reverse();
-  const names = [...new Set(all.flatMap(g => g.seats.map(s => s.player)))].sort((a, b) => a.localeCompare(b));
+  const names = [...new Set(st.games.flatMap(g => g.seats.map(s => s.player)))].sort((a, b) => a.localeCompare(b));
   const who = filter && names.find(n => norm(n) === norm(filter));
-  const list = who ? all.filter(g => g.seats.some(s => s.player === who)) : all;
+  const list = (who ? st.games.filter(g => g.seats.some(s => s.player === who)) : st.games).slice().reverse();
   const number = new Map(st.allGames.map((g, i) => [g.id, i + 1]));
 
-  const timed = list.filter(g => g.minutes);
-  const avgMin = timed.length ? Math.round(timed.reduce((t, g) => t + g.minutes, 0) / timed.length) : 0;
-  const longest = timed.reduce((m, g) => (!m || g.minutes > m.minutes ? g : m), null);
-  const withStarter = list.filter(g => g.seats.some(s => s.starter));
-  const starterWins = withStarter.filter(g => g.seats.some(s => s.starter && s.win)).length;
-  const kpis = [
-    { label: 'POTJES', value: list.length, sub: who ? 'met ' + who : 'alle seizoenen' },
-    { label: 'GEMIDDELDE DUUR', value: avgMin ? fmtMinutes(avgMin) : '—', sub: timed.length ? timed.length + ' potjes met tijd' : 'nog geen tijden' },
-    { label: 'LANGSTE POTJE', value: longest ? fmtMinutes(longest.minutes) : '—', sub: longest ? shortDate(longest.date) + ' · ' + (longest.seats.find(s => s.win)?.player || 'geen winnaar') + ' won' : '—' },
-    { label: 'BEGINNER WINT', value: withStarter.length ? pct(starterWins, withStarter.length) + '%' : '—', sub: withStarter.length ? `${starterWins} van ${withStarter.length} potjes` : 'nog niet ingevuld' },
-  ];
+  const chips = ['', ...names].map(n => `<a href="#/potjes${n ? '/' + encodeURIComponent(n) : ''}" class="${(who || '') === n ? 'active' : ''}">${n ? esc(n) : 'Iedereen'}</a>`).join('');
 
-  const chips = ['', ...names].map(n => `<a href="#/potjes${n ? '/' + encodeURIComponent(n) : ''}" class="${(who || '') === n ? 'active' : ''}">${n ? esc(n) : 'Alle'}</a>`).join('');
-
-  const card = g => {
-    const winner = g.seats.find(s => s.win);
+  const item = g => {
+    const winners = g.seats.filter(s => s.win);
     const starter = g.seats.find(s => s.starter);
-    const meta = [
-      g.minutes ? `<span class="chip"><span class="chip-k">DUUR</span>${fmtMinutes(g.minutes)}</span>` : '',
-      starter ? `<span class="chip"><span class="chip-k">BEGON</span>${esc(starter.player.toUpperCase())}</span>` : '',
-    ].join('');
-    const seats = g.seats.map(s => `
-      <div class="seat${s.win ? ' won' : ''}">
-        <span class="seat-mark" aria-hidden="true"></span>
-        <a class="seat-name" href="${playerHref(s.player)}">${esc(s.player)}</a>
-        <span class="seat-cmd"><span class="seat-cmd-name">${esc(s.commander || '—')}</span>${pips(s.colors)}</span>
-        <span class="seat-tags">${s.starter ? '<span class="tag">1E</span>' : ''}${s.win ? '<span class="tag win">WINST</span>' : ''}</span>
-      </div>`).join('');
-    const cotm = g.card ? `
-      <figure class="side-block">
-        <span class="kpi-label">CARD OF THE MATCH</span>
-        <a class="cotm" href="${esc(matchCard(g.card)?.uri || 'https://scryfall.com/search?q=' + encodeURIComponent(g.card))}" target="_blank" rel="noopener">
-          ${matchCard(g.card)?.image ? `<img src="${esc(matchCard(g.card).image)}" alt="" loading="lazy" onerror="this.remove()">` : ''}
-          <span>${esc(g.card)}</span>
-        </a>
-      </figure>` : '';
-    const photo = g.photo ? `
-      <figure class="side-block">
-        <span class="kpi-label">FOTO</span>
-        <a class="photo" href="${esc(g.photo.href)}" target="_blank" rel="noopener">
-          <img src="${esc(g.photo.src)}" alt="Foto van potje ${number.get(g.id)}" loading="lazy" referrerpolicy="no-referrer" onerror="this.closest('figure').classList.add('broken')">
-          <span class="photo-err">FOTO NIET OPENBAAR GEDEELD</span>
-        </a>
-      </figure>` : '';
+    const head = winners.length === 1 ? `${winners[0].player} wint met ${shortName(winners[0].parts) || 'onbekend deck'}`
+      : winners.length > 1 ? `${winners.map(w => w.player).join(' en ')} winnen samen` : 'Geen winnaar';
+    const meta = [g.rounds ? rounds(g.rounds) : '', g.minutes ? fmtMinutes(g.minutes) : '', starter ? starter.player + ' begon' : ''].filter(Boolean).join(' · ');
+    const cotm = g.card ? card(g.card) : null;
     return `
-    <article class="panel play${winner ? '' : ' no-winner'}">
-      <header class="play-head">
-        <span class="play-id"><span class="play-no">#${two(number.get(g.id))}</span><span class="play-date">${shortDate(g.date)} ${g.date.slice(0, 4)}</span></span>
-        <span class="play-winner">${winner ? `<span class="chip-k">WINNAAR</span>${esc(winner.player.toUpperCase())}` : '<span class="chip-k">GEEN WINNAAR</span>'}</span>
-        <span class="play-meta">${meta}</span>
-      </header>
-      <div class="play-body${cotm || photo ? '' : ' solo'}">
-        <div class="seats">${seats}</div>
-        ${cotm || photo ? `<aside class="play-side">${photo}${cotm}</aside>` : ''}
-      </div>
+    <article class="result">
+      <p class="kicker">No. ${number.get(g.id)} · ${longDate(g.date)}${g.location ? ' · ' + esc(g.location) : ''}</p>
+      <h3>${esc(head)}</h3>
+      ${meta ? `<p class="byline">${meta}</p>` : ''}
+      <table class="agate">
+        <tbody>${g.seats.map(s => `<tr${s.win ? ' class="won"' : ''}>
+          <td class="l"><a href="${playerHref(s.player)}">${esc(s.player)}</a>${s.starter ? ' <span title="Begon">◆</span>' : ''}</td>
+          <td class="l">${esc(s.commander || '—')}</td><td class="b">${s.win ? 'W' : ''}</td></tr>`).join('')}</tbody>
+      </table>
+      ${g.card ? `<p class="cotm">${cotm?.image ? `<a class="halftone card-img" href="${esc(cotm.uri)}" target="_blank" rel="noopener"><img src="${esc(cotm.image)}" alt="" loading="lazy"></a>` : ''}
+        <span><span class="small-caps">Card of the match</span><br>${esc(g.card)}</span></p>` : ''}
     </article>`;
   };
 
   return `
-  <div class="stack">
-    <section class="hero-copy">
-      <span class="eyebrow">&gt; LOGBOEK / ALLE POTJES</span>
-      <h1 class="page-title">Potjes</h1>
-    </section>
-    <section class="kpis small">${kpis.map(k => `
-      <div class="kpi"><span class="kpi-label">${k.label}</span><span class="kpi-value">${esc(k.value)}</span><span class="kpi-sub" title="${esc(k.sub)}">${esc(k.sub)}</span></div>`).join('')}
-    </section>
-    <div class="switcher">${chips}</div>
-    ${list.length ? list.map(card).join('') : '<div class="panel panel-pad"><p class="empty">GEEN POTJES GEVONDEN</p></div>'}
-    <p class="source">${esc(CONFIG.source)}</p>
+  <div class="page">
+    <p class="kicker">Uitslagen</p>
+    <h1 class="headline">Alle potjes</h1>
+    <p class="deck">${list.length} potjes ${scope(st)}${st.roundGames ? `; gemiddeld ${nl1(st.avgRounds)} ronden` : ''}${st.starterGames ? `; de beginner won ${st.starterRate}%` : ''}. ◆ = begon.</p>
+    <nav class="switcher">${chips}</nav>
+    <div class="results">${list.length ? list.map(item).join('') : '<p class="small">Geen potjes gevonden.</p>'}</div>
   </div>`;
 }
 
-const fmtMinutes = m => m >= 60 ? Math.floor(m / 60) + 'u' + String(m % 60).padStart(2, '0') : m + ' min';
-
-function mostCommon(list) {
-  const c = {}; list.forEach(v => { c[v] = (c[v] || 0) + 1; });
-  return Object.keys(c).sort((a, b) => c[b] - c[a])[0] || '';
-}
-
-// ---------- Loading + error ----------
+// ---------- Loading and errors ----------
 export function skeleton() {
-  const block = (h, extra = '') => `<div class="sk" style="height:${h}px;${extra}"></div>`;
-  return `
-  <div class="stack" aria-busy="true" aria-label="Laden">
-    <section class="hero">
-      <div class="hero-left"><div class="hero-copy">${block(12, 'width:200px')}${block(150, 'width:80%')}${block(16, 'width:70%')}</div>${block(40, 'width:240px')}</div>
-      ${block(240)}
-    </section>
-    ${block(112)}
-    <section class="row row-340"><div class="span-2">${block(360)}</div>${block(360)}</section>
-  </div>`;
+  return `<div class="page"><p class="kicker">Ter perse</p><h1 class="headline">De krant wordt gedrukt…</h1><div class="sk"></div><div class="sk short"></div></div>`;
 }
 
 export function errorPanel(message) {
-  return `
-  <div class="stack">
-    <section class="panel panel-pad featured" style="border-color:rgba(200,255,46,0.3)">
-      <span class="eyebrow">&gt; GEEN DATA</span>
-      <h2 class="h2">De spreadsheet kon niet worden geladen</h2>
-      <p class="helper">${esc(message)}</p>
-      <p class="helper">Controleer in Google Sheets: <b>Delen → Algemene toegang → Iedereen met de link → Viewer</b>.</p>
-    </section>
-  </div>`;
+  return `<div class="page"><p class="kicker">Drukfout</p><h1 class="headline">De krant kon niet worden gedrukt</h1><p class="deck">${esc(message)}</p></div>`;
 }
