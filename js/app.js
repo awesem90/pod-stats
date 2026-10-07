@@ -1,8 +1,6 @@
-import { CONFIG } from './config.js';
-import { fetchGames, cachedGames, enrichCommanders, enrichCards, resolveGames } from './data.js';
+import { fetchPod, cachedPod } from './data.js';
 import { computeStats, pickSeason } from './stats.js';
-import { header, overview, profile, plays, skeleton, errorPanel } from './render.js';
-import { demoGames } from './demo.js';
+import { header, footer, overview, profile, commanders, plays, skeleton, errorPanel } from './render.js';
 
 const app = document.getElementById('app');
 const pref = {
@@ -10,50 +8,51 @@ const pref = {
   set(k, v) { try { localStorage.setItem('podstats:' + k, v); } catch { /* ignore */ } },
 };
 
+const RANGES = ['last10', 'season', 'all'];
 const state = {
-  games: null,
+  pod: null, // { games, generated }
   error: null,
-  range: pref.get('range', 'season'),
+  range: RANGES.includes(pref.get('range')) ? pref.get('range') : 'season',
   player: pref.get('player', ''),
 };
 
 let memo = { key: null, stats: null };
-let dataVersion = 0;
 function stats() {
-  const season = pickSeason(state.games);
-  const key = dataVersion + '|' + state.range + '|' + season + '|' + enrichTick;
-  if (memo.key !== key) memo = { key, stats: computeStats(resolveGames(state.games), { range: state.range, season }) };
+  const season = pickSeason(state.pod.games);
+  const key = state.pod.generated + '|' + state.pod.games.length + '|' + state.range + '|' + season;
+  if (memo.key !== key) memo = { key, stats: computeStats(state.pod.games, { range: state.range, season }) };
   return memo.stats;
 }
 
 function route() {
-  const h = decodeURIComponent(location.hash.replace(/^#\/?/, ''));
-  if (h.startsWith('speler')) return { screen: 'player', name: h.slice('speler/'.length) || null };
-  if (h.startsWith('potjes')) return { screen: 'plays', name: h.slice('potjes/'.length) || null };
+  const [page, arg] = location.hash.replace(/^#\/?/, '').split('/').map(decodeURIComponent);
+  if (page === 'speler') return { screen: 'player', name: arg || null };
+  if (page === 'potjes') return { screen: 'plays', name: arg || null };
+  if (page === 'commanders') return { screen: 'commanders' };
   return { screen: 'overview' };
 }
 
 function render() {
   const r = route();
-  if (!state.games) {
+  if (!state.pod) {
     app.innerHTML = header(null, r.screen) + `<main>${state.error ? errorPanel(state.error) : skeleton()}</main>`;
     return;
   }
   const st = stats();
-  let body;
+  let body, title = '';
   if (r.screen === 'player') {
     const name = r.name || (st.players.some(p => p.name === state.player) ? state.player : st.players[0]?.name);
     if (name && name !== state.player) { state.player = name; pref.set('player', name); }
-    body = profile(st, name);
-    document.title = (name ? name + ' · ' : '') + 'POD//STATS';
+    body = profile(st, name); title = name;
   } else if (r.screen === 'plays') {
-    body = plays(st, r.name);
-    document.title = 'Potjes · POD//STATS';
+    body = plays(st, r.name); title = 'Uitslagen';
+  } else if (r.screen === 'commanders') {
+    body = commanders(st); title = 'Commanders';
   } else {
-    body = overview(st, state.range);
-    document.title = 'POD//STATS';
+    body = overview(st);
   }
-  app.innerHTML = header(st, r.screen) + `<main>${body}</main>`;
+  document.title = (title ? title + ' · ' : '') + 'The Pod Times';
+  app.innerHTML = header(st, r.screen, state.pod.generated) + `<main>${body}</main>` + footer(state.pod.generated);
 }
 
 app.addEventListener('click', e => {
@@ -63,47 +62,20 @@ app.addEventListener('click', e => {
   render();
 });
 
-let lastScreen = null;
-window.addEventListener('hashchange', () => {
-  render();
-  const s = location.hash;
-  if (s !== lastScreen) window.scrollTo({ top: 0 });
-  lastScreen = s;
-});
-
-let enrichTick = 0;
-let enriching = Promise.resolve();
-function enrich() {
-  // One lookup run at a time, so the cached and the fresh data don't query Scryfall twice.
-  enriching = enriching.then(async () => {
-    const names = state.games.flatMap(g => g.seats.map(s => s.commander).filter(Boolean));
-    if (await enrichCommanders(names)) { enrichTick++; render(); }
-    if (await enrichCards(state.games.map(g => g.card))) { enrichTick++; render(); }
-  }).catch(err => console.warn('POD//STATS: Scryfall lookup failed', err)); // keep the chain alive
-}
+window.addEventListener('hashchange', () => { render(); window.scrollTo({ top: 0 }); });
 
 async function start() {
-  if (new URLSearchParams(location.search).has('demo')) {
-    state.games = demoGames();
-    render(); enrich();
-    return;
-  }
-  state.games = cachedGames();
+  state.pod = cachedPod();
   render();
-  if (state.games) enrich();
   try {
-    state.games = await fetchGames(); dataVersion++;
+    state.pod = await fetchPod();
     state.error = null;
-    render(); enrich();
   } catch (err) {
-    // Keep showing the last good data if we have any.
-    if (!state.games) {
-      // A private sheet redirects to Google sign-in, which the browser reports as a bare network error.
-      state.error = err instanceof TypeError ? 'De spreadsheet is niet openbaar gedeeld (of je bent offline).' : err.message;
-      render();
-    }
-    console.warn('POD//STATS: fetch failed', err);
+    // Keep showing the last good edition if there is one.
+    if (!state.pod) state.error = err.message;
+    console.warn('Pod Times: data load failed', err);
   }
+  render();
 }
 
 start();
