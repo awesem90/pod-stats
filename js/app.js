@@ -9,18 +9,21 @@ const pref = {
 };
 
 const RANGES = ['last10', 'season', 'all'];
+// Each page has its own edition; the profiles and the commander list default to all games.
+const DEFAULT_RANGE = { overview: 'season', player: 'all', commanders: 'all', plays: 'season' };
+const rangeFor = screen => { const r = pref.get('range:' + screen); return RANGES.includes(r) ? r : DEFAULT_RANGE[screen]; };
+
 const state = {
   pod: null, // { games, generated }
   error: null,
-  range: RANGES.includes(pref.get('range')) ? pref.get('range') : 'season',
   player: pref.get('player', ''),
 };
 
 let memo = { key: null, stats: null };
-function stats() {
+function stats(range) {
   const season = pickSeason(state.pod.games);
-  const key = state.pod.generated + '|' + state.pod.games.length + '|' + state.range + '|' + season;
-  if (memo.key !== key) memo = { key, stats: computeStats(state.pod.games, { range: state.range, season }) };
+  const key = state.pod.generated + '|' + state.pod.games.length + '|' + range + '|' + season;
+  if (memo.key !== key) memo = { key, stats: computeStats(state.pod.games, { range, season }) };
   return memo.stats;
 }
 
@@ -38,7 +41,7 @@ function render() {
     app.innerHTML = header(null, r.screen) + `<main>${state.error ? errorPanel(state.error) : skeleton()}</main>`;
     return;
   }
-  const st = stats();
+  const st = stats(rangeFor(r.screen));
   let body, title = '';
   if (r.screen === 'player') {
     const name = r.name || (st.players.some(p => p.name === state.player) ? state.player : st.players[0]?.name);
@@ -58,7 +61,7 @@ function render() {
 app.addEventListener('click', e => {
   const b = e.target.closest('[data-range]');
   if (!b) return;
-  state.range = b.dataset.range; pref.set('range', state.range);
+  pref.set('range:' + route().screen, b.dataset.range);
   render();
 });
 
