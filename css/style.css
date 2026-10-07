@@ -145,10 +145,10 @@ figcaption { font-size: 13px; line-height: 1.4; color: var(--ink-2); padding-top
 .bar { height: 7px; border: 1px solid var(--ink); }
 .bar span { display: block; height: 100%; background: repeating-linear-gradient(135deg, var(--ink) 0 1.5px, transparent 1.5px 3.5px); }
 .bar-val { font-weight: 700; font-variant-numeric: tabular-nums; }
-.quotes { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; }
+.quotes { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr)); gap: 20px; }
 blockquote { margin: 0; padding: 14px 6px; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); font-family: var(--head); font-style: italic; font-size: 21px; line-height: 1.35; text-align: center; text-wrap: balance; }
 blockquote::before { content: '\201C'; } blockquote::after { content: '\201D'; }
-.features { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0; }
+.features { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr)); gap: 0; }
 .feature { padding: 0 18px; border-left: 1px solid var(--rule); }
 .feature:first-child { padding-left: 0; border-left: 0; }
 .feature h3 { font-family: var(--head); font-size: 19px; line-height: 1.2; }
@@ -205,3 +205,11 @@ blockquote::before { content: '\201C'; } blockquote::after { content: '\201D'; }
   .feature { padding: 0 0 14px; border-left: 0; border-bottom: 1px solid var(--rule-soft); margin-bottom: 14px; }
 }
 .agate tr.unranked td { color: var(--ink-3); font-style: italic; }
+
+/* ---------- Group logo (front page masthead) ---------- */
+.seal { justify-self: start; display: block; width: 140px; }
+.seal img { display: block; width: 100%; height: auto; filter: drop-shadow(0 2px 3px rgba(26,24,20,0.25)); }
+@media (max-width: 640px) {
+  .ears:has(.seal) { gap: 6px; }
+  .seal { justify-self: center; width: 110px; }
+}
