@@ -42,7 +42,7 @@ The importer:
 - **Commanders**: every commander played, sorted by winrate, with pilots, average rounds and fastest win.
 - **Uitslagen**: every game, with rounds, duration, start player, winner, everyone's commander and the Card of the Match.
 
-The edition switch in the masthead (*Laatste 10 · Seizoen · Alle potjes*) applies to every page. A player needs at least a quarter of the edition's games for a rank (`minGamesShare` in `js/config.js`); players below that are listed without one.
+The edition switch in the masthead (*Laatste 10 · Seizoen · Alle potjes*) is remembered per page. Spelers and Commanders start on *Alle potjes*; Voorpagina and Uitslagen start on the current season (`DEFAULT_RANGE` in `js/app.js`). A player needs at least a quarter of the edition's games for a rank (`minGamesShare` in `js/config.js`); players below that are listed without one.
 
 ## Hosting
 
