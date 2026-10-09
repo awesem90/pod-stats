@@ -33,8 +33,9 @@ function toGames(pod) {
   });
 }
 
-// Newest first.
-const toArticles = a => (a?.articles || []).slice().sort((x, y) => y.date.localeCompare(x.date));
+// Newest first: by date and time; on a tie, the entry added later to the file wins.
+const toArticles = a => (a?.articles || []).map((x, i) => ({ ...x, order: i }))
+  .sort((x, y) => (y.date + (y.time || '')).localeCompare(x.date + (x.time || '')) || y.order - x.order);
 const toPod = raw => ({ games: toGames(raw.pod), generated: raw.pod.generated, articles: toArticles(raw.articles) });
 
 function load(key) { try { return JSON.parse(localStorage.getItem(key)); } catch { return null; } }

@@ -86,10 +86,10 @@ function standingsTable(st) {
 }
 
 // A written game report from data/articles.json.
-function report(a) {
+function report(a, top = false) {
   const body = a.body.map(b => typeof b === 'string' ? `<p>${inline(b)}</p>` : `<p class="pull">${inline(b.quote)}</p>`).join('');
   return `
-  <article class="report">
+  <article class="report${top ? ' top' : ''}">
     <p class="kicker">${esc(a.kicker || 'Report')} · ${longDate(a.date)}</p>
     <h2 class="report-head">${esc(a.headline)}</h2>
     ${a.deck ? `<p class="deck">${inline(a.deck)}</p>` : ''}
@@ -166,10 +166,14 @@ export function overview(st, articles = []) {
     </div>`).join('')
     : '<p class="small">No commander has been played by two players yet.</p>';
 
-  const reports = articles.slice(0, CONFIG.frontPageArticles);
+  // The newest report leads the page at full width; the next ones sit in columns below it.
+  const [topStory, ...more] = articles.slice(0, CONFIG.frontPageArticles);
 
   return `
   <div class="page">
+    ${topStory ? `<section class="top-story">${report(topStory, true)}</section>` : ''}
+    ${more.length ? `<section class="reports">${more.map(a => report(a)).join('')}</section>` : ''}
+
     <section class="front">
       <article class="lead-story">
         <p class="kicker">${st.range === 'all' ? 'All games' : st.range === 'last10' ? 'The last ' + st.games.length + ' games' : 'Season ' + st.season}</p>
@@ -186,8 +190,6 @@ export function overview(st, articles = []) {
         <ul class="form-list">${form}</ul>
       </aside>
     </section>
-
-    ${reports.length ? `<section class="reports">${reports.map(report).join('')}</section>` : ''}
 
     <section class="three">
       <section class="col">

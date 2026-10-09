@@ -2,6 +2,7 @@
   "articles": [
     {
       "id": "2026-10-08-xyris",
+      "time": "20:20",
       "date": "2026-10-08",
       "kicker": "Game report",
       "headline": "Xyris Shakes the Pod, But Falls to Yshtola",
@@ -25,6 +26,7 @@
     },
     {
       "id": "2026-10-08-marchesa",
+      "time": "21:10",
       "date": "2026-10-08",
       "kicker": "Game report",
       "headline": "Marchesa Shows No Mercy in Bracket 4 Brawl",
