@@ -22,12 +22,13 @@ The importer:
 
 ## Articles
 
-The front page shows the newest written reports from `data/articles.json` (`frontPageArticles` in `js/config.js` sets how many). To publish one, add an entry like this, newest anywhere in the list:
+The front page opens with the written reports from `data/articles.json`, newest on top: the newest is the full-width top story, and the next ones sit in columns below it (`frontPageArticles` in `js/config.js` sets how many). Order goes by `date` and `time`; on a tie, the entry added later wins. To publish one, add an entry like this anywhere in the list:
 
 ```json
 {
   "id": "2026-10-08-marchesa",
   "date": "2026-10-08",
+  "time": "21:10",
   "kicker": "Game report",
   "headline": "Marchesa Shows No Mercy in Bracket 4 Brawl",
   "deck": "The subheadline.",

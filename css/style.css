@@ -234,3 +234,16 @@ blockquote::before { content: '\201C'; } blockquote::after { content: '\201D'; }
   .report { padding: 0 0 18px; border-left: 0; }
   .report + .report { border-top: 1px solid var(--rule); padding-top: 14px; }
 }
+
+/* ---------- Top story: the newest report leads the front page ---------- */
+.top-story .report.top { padding: 0; border-left: 0; }
+.report.top .report-head { font-size: clamp(32px, 4.6vw, 56px); line-height: 1.04; }
+.report.top .deck { font-size: 20px; }
+.reports + .front, .top-story + .front { border-top: 3px double var(--rule); padding-top: 14px; }
+@media (min-width: 901px) {
+  .report.top { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); grid-template-rows: repeat(5, auto) 1fr; column-gap: 28px; align-items: start; }
+  .report.top > .kicker, .report.top > .report-head, .report.top > .deck, .report.top > .byline { grid-column: 1 / -1; }
+  .report.top > .photo { grid-column: 1; grid-row: 5; }
+  .report.top > .numbers { grid-column: 1; grid-row: 6; }
+  .report.top > .story { grid-column: 2; grid-row: 5 / span 2; columns: 2 220px; column-rule: 1px solid var(--rule-soft); }
+}
