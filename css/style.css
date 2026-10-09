@@ -247,3 +247,7 @@ blockquote::before { content: '\201C'; } blockquote::after { content: '\201D'; }
   .report.top > .numbers { grid-column: 1; grid-row: 6; }
   .report.top > .story { grid-column: 2; grid-row: 5 / span 2; columns: 2 220px; column-rule: 1px solid var(--rule-soft); }
 }
+
+/* Scryfall links on commander names: underlined like a reference, so they read as links in body type */
+a.scry { text-decoration: underline; text-decoration-color: var(--rule-soft); text-underline-offset: 2px; }
+a.scry:hover { text-decoration-color: var(--ink); }

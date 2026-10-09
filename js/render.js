@@ -16,6 +16,15 @@ const scope = st => st.range === 'all' ? 'across all games' : st.range === 'last
 // *text* in article copy becomes italics; everything else is escaped.
 const inline = s => esc(s).replace(/\*([^*]+)\*/g, '<em>$1</em>');
 
+// Commander name(s) linked to Scryfall; partners get one link each ("Frodo… & Sam…").
+function cmdLinks(parts, fallback = '—') {
+  if (!parts || !parts.length) return esc(fallback);
+  return parts.map(p => {
+    const uri = card(p)?.uri || 'https://scryfall.com/search?q=' + encodeURIComponent('!"' + p + '"');
+    return `<a class="scry" href="${esc(uri)}" target="_blank" rel="noopener">${esc(p)}</a>`;
+  }).join(' &amp; ');
+}
+
 function mana(colors) {
   if (!colors || !colors.length) return '';
   return `<span class="mana">${colors.map(c => `<abbr class="m m-${c}" title="${COLOR_NAME[c]}">${c}</abbr>`).join('')}</span>`;
@@ -240,7 +249,7 @@ export function profile(st, name) {
   const vs = st.matrix.find(r => r.name === p.name).cells.filter(c => c && c.games).sort((a, b) => b.rate - a.rate);
 
   const log = p.log.slice(-8).reverse().map(({ game, seat }) => `
-    <tr><td>${shortDate(game.date)}</td><td class="l">${esc(seat.commander || '—')}</td>
+    <tr><td>${shortDate(game.date)}</td><td class="l">${cmdLinks(seat.parts)}</td>
     <td>${game.rounds || '—'}</td><td>${seat.starter ? '◆' : ''}</td><td class="b">${seat.win ? 'W' : 'L'}</td></tr>`).join('');
 
   return `
@@ -255,7 +264,7 @@ export function profile(st, name) {
         ${sectionHead('Decks')}
         <table class="agate">
           <thead><tr><th class="l">Commander</th><th title="Games">G</th><th title="Wins">W</th><th>%</th></tr></thead>
-          <tbody>${decks.map(d => `<tr><td class="l">${esc(d.name)} ${mana(d.colors)}</td><td>${d.games}</td><td>${d.wins}</td><td class="b">${d.rate}</td></tr>`).join('')}</tbody>
+          <tbody>${decks.map(d => `<tr><td class="l">${cmdLinks(d.parts, d.name)} ${mana(d.colors)}</td><td>${d.games}</td><td>${d.wins}</td><td class="b">${d.rate}</td></tr>`).join('')}</tbody>
         </table>
         ${sectionHead('Recent games', `<a class="more" href="${gamesHref(p.name)}">All results →</a>`)}
         <table class="agate">
