@@ -213,3 +213,24 @@ blockquote::before { content: '\201C'; } blockquote::after { content: '\201D'; }
   .ears:has(.seal) { gap: 6px; }
   .seal { justify-self: center; width: 110px; }
 }
+
+/* ---------- Game reports (data/articles.json) ---------- */
+.reports { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(420px, 100%), 1fr)); border-top: 3px double var(--rule); padding-top: 14px; }
+.report { display: flex; flex-direction: column; gap: 2px; min-width: 0; padding: 0 24px; border-left: 1px solid var(--rule); }
+.report:first-child { padding-left: 0; border-left: 0; }
+.report:last-child { padding-right: 0; }
+.report-head { font-family: var(--head); font-weight: 900; font-size: clamp(26px, 3vw, 36px); line-height: 1.08; margin: 2px 0 6px; text-wrap: balance; }
+.report .deck { font-size: 18px; }
+.report .byline { padding-bottom: 8px; border-bottom: 1px solid var(--rule-soft); }
+.report .photo .halftone { aspect-ratio: 2 / 1; }
+.report .story { columns: 2 220px; }
+.pull { font-family: var(--head); font-style: italic; font-size: 17px; line-height: 1.4; text-indent: 0 !important; text-align: left; padding: 6px 0; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); break-inside: avoid; }
+.numbers { margin-top: 6px; padding: 10px 12px; background: rgba(26,24,20,0.06); border: 1px solid var(--rule-soft); break-inside: avoid; }
+.numbers h3 { font-family: var(--head); font-style: italic; font-size: 16px; margin-bottom: 4px; }
+.numbers dl { display: grid; grid-template-columns: minmax(0, 1fr) auto; font-size: 14.5px; }
+.numbers dt, .numbers dd { margin: 0; padding: 3px 0; border-bottom: 1px dotted var(--rule-soft); }
+.numbers dd { font-weight: 700; text-align: right; padding-left: 12px; }
+@media (max-width: 900px) {
+  .report { padding: 0 0 18px; border-left: 0; }
+  .report + .report { border-top: 1px solid var(--rule); padding-top: 14px; }
+}

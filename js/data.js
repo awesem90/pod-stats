@@ -1,7 +1,7 @@
-// Loads data/pod.json (made from a BG Stats export by tools/import-bgstats.ps1).
+// Loads data/pod.json (made from a BG Stats export by tools/import-bgstats.ps1) and data/articles.json.
 import { CONFIG } from './config.js';
 
-const CACHE_KEY = 'podstats:pod:v1';
+const CACHE_KEY = 'podstats:pod:v2';
 let cards = {};
 
 export const norm = s => String(s || '').replace(/[‘’ʼ]/g, "'").trim().toLowerCase().replace(/\s+/g, ' ');
@@ -16,6 +16,7 @@ function toGames(pod) {
     const winners = p.seats.filter(s => s.win).map(s => s.player);
     return {
       ...p,
+      location: CONFIG.locationNames[p.location] ?? p.location,
       card: p.card ? card(p.card)?.name || p.card : null,
       winners,
       seats: p.seats.map(s => {
@@ -32,18 +33,28 @@ function toGames(pod) {
   });
 }
 
+// Newest first.
+const toArticles = a => (a?.articles || []).slice().sort((x, y) => y.date.localeCompare(x.date));
+const toPod = raw => ({ games: toGames(raw.pod), generated: raw.pod.generated, articles: toArticles(raw.articles) });
+
 function load(key) { try { return JSON.parse(localStorage.getItem(key)); } catch { return null; } }
 function save(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch { /* ignore */ } }
 
 export function cachedPod() {
-  const pod = load(CACHE_KEY);
-  return pod ? { games: toGames(pod), generated: pod.generated } : null;
+  const raw = load(CACHE_KEY);
+  return raw?.pod ? toPod(raw) : null;
+}
+
+async function getJson(file, required) {
+  const res = await fetch(file, { cache: 'no-cache' });
+  if (res.ok) return res.json();
+  if (required) throw new Error(`Could not load ${file} (HTTP ${res.status}).`);
+  return null;
 }
 
 export async function fetchPod() {
-  const res = await fetch(CONFIG.dataFile, { cache: 'no-cache' });
-  if (!res.ok) throw new Error('Kon ' + CONFIG.dataFile + ' niet laden (HTTP ' + res.status + ').');
-  const pod = await res.json();
-  save(CACHE_KEY, pod);
-  return { games: toGames(pod), generated: pod.generated };
+  const [pod, articles] = await Promise.all([getJson(CONFIG.dataFile, true), getJson(CONFIG.articlesFile, false)]);
+  const raw = { pod, articles };
+  save(CACHE_KEY, raw);
+  return toPod(raw);
 }

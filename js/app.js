@@ -29,8 +29,9 @@ function stats(range) {
 
 function route() {
   const [page, arg] = location.hash.replace(/^#\/?/, '').split('/').map(decodeURIComponent);
-  if (page === 'speler') return { screen: 'player', name: arg || null };
-  if (page === 'potjes') return { screen: 'plays', name: arg || null };
+  // The Dutch paths ('speler', 'potjes') are kept so old links still work.
+  if (page === 'player' || page === 'speler') return { screen: 'player', name: arg || null };
+  if (page === 'games' || page === 'potjes') return { screen: 'plays', name: arg || null };
   if (page === 'commanders') return { screen: 'commanders' };
   return { screen: 'overview' };
 }
@@ -48,14 +49,14 @@ function render() {
     if (name && name !== state.player) { state.player = name; pref.set('player', name); }
     body = profile(st, name); title = name;
   } else if (r.screen === 'plays') {
-    body = plays(st, r.name); title = 'Uitslagen';
+    body = plays(st, r.name); title = 'Results';
   } else if (r.screen === 'commanders') {
     body = commanders(st); title = 'Commanders';
   } else {
-    body = overview(st);
+    body = overview(st, state.pod.articles);
   }
   document.title = (title ? title + ' · ' : '') + 'The Pod Times';
-  app.innerHTML = header(st, r.screen, state.pod.generated) + `<main>${body}</main>` + footer(state.pod.generated);
+  app.innerHTML = header(st, r.screen) + `<main>${body}</main>` + footer(state.pod.generated);
 }
 
 app.addEventListener('click', e => {

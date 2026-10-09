@@ -2,15 +2,15 @@
 import { CONFIG } from './config.js';
 
 export const pct = (w, g) => g ? Math.round(w / g * 100) : 0;
-export const nl1 = v => v.toFixed(1).replace('.', ',');
-const MONTHS = ['januari', 'februari', 'maart', 'april', 'mei', 'juni', 'juli', 'augustus', 'september', 'oktober', 'november', 'december'];
-const DAYS = ['zondag', 'maandag', 'dinsdag', 'woensdag', 'donderdag', 'vrijdag', 'zaterdag'];
+export const dec1 = v => v.toFixed(1);
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const dateOf = iso => { const [y, m, d] = iso.split('-').map(Number); return new Date(y, m - 1, d); };
-export const shortDate = iso => { const d = dateOf(iso); return d.getDate() + ' ' + MONTHS[d.getMonth()].slice(0, 3); };
-export const longDate = iso => { const d = dateOf(iso); return `${DAYS[d.getDay()]} ${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`; };
+export const shortDate = iso => { const d = dateOf(iso); return MONTHS[d.getMonth()].slice(0, 3) + ' ' + d.getDate(); };
+export const longDate = iso => { const d = dateOf(iso); return `${DAYS[d.getDay()]}, ${MONTHS[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`; };
 export const monthYear = iso => { const d = dateOf(iso); return MONTHS[d.getMonth()] + ' ' + d.getFullYear(); };
-export const fmtMinutes = m => m >= 60 ? Math.floor(m / 60) + 'u' + String(m % 60).padStart(2, '0') : m + ' min';
-export const COLOR_NL = { W: 'Wit', U: 'Blauw', B: 'Zwart', R: 'Rood', G: 'Groen' };
+export const fmtMinutes = m => m >= 60 ? Math.floor(m / 60) + 'h ' + String(m % 60).padStart(2, '0') + 'm' : m + ' min';
+export const COLOR_NAME = { W: 'White', U: 'Blue', B: 'Black', R: 'Red', G: 'Green' };
 
 export function seasons(games) { return [...new Set(games.map(g => +g.date.slice(0, 4)))].sort(); }
 export function pickSeason(games) {
@@ -113,14 +113,14 @@ export function computeStats(allGames, { range, season }) {
   players.forEach(p => {
     const r = p.results, f = last5(p), fw = f.filter(Boolean).length;
     let note;
-    if (!r.length) note = 'nog geen potjes';
-    else if (p.streak >= 2) note = p.streak + ' op een rij';
-    else if (p.streak <= -3) note = (-p.streak) + ' potjes zonder winst';
+    if (!r.length) note = 'no games yet';
+    else if (p.streak >= 2) note = p.streak + ' in a row';
+    else if (p.streak <= -3) note = (-p.streak) + ' games without a win';
     else if (p.streak === 1) {
       let dry = 0; for (let i = r.length - 2; i >= 0 && !r[i]; i--) dry++;
-      note = dry >= 3 ? 'eerste winst in ' + (dry + 1) + ' potjes' : fw + ' winst' + (fw === 1 ? '' : 'en') + ' in ' + f.length + ' potjes';
-    } else note = fw ? 'wisselend, ' + fw + ' uit ' + f.length : 'nog geen winst in de laatste ' + f.length;
-    if (fw > 0 && fw === bestFormWins && players.filter(x => last5(x).filter(Boolean).length === fw).length === 1) note += ', beste vorm';
+      note = dry >= 3 ? 'first win in ' + (dry + 1) + ' games' : fw + ' win' + (fw === 1 ? '' : 's') + ' in ' + f.length + ' games';
+    } else note = fw ? 'mixed, ' + fw + ' of ' + f.length : 'no win in the last ' + f.length;
+    if (fw > 0 && fw === bestFormWins && players.filter(x => last5(x).filter(Boolean).length === fw).length === 1) note += ', best form';
     p.formNote = note;
     p.form = f;
   });
@@ -163,7 +163,7 @@ export function computeStats(allGames, { range, season }) {
     if (!gap || hi.rate - lo.rate > gap.hi.rate - gap.lo.rate) gap = { name: row.name, lo, hi };
   });
   if (gap && gap.hi.rate > gap.lo.rate) {
-    rivalries.push(`${gap.name} wint ${gap.lo.rate}% als ${gap.lo.vs} aan tafel zit, tegen ${gap.hi.rate}% met ${gap.hi.vs} erbij — de scherpste eenzijdige rivaliteit van de pod.`);
+    rivalries.push(`${gap.name} wins ${gap.lo.rate}% with ${gap.lo.vs} at the table, against ${gap.hi.rate}% with ${gap.hi.vs} there — the sharpest one-sided rivalry in the pod.`);
   }
   let pair = null;
   names.forEach((a, i) => names.slice(i + 1).forEach(b => {
@@ -171,7 +171,7 @@ export function computeStats(allGames, { range, season }) {
     if (!pair || t.games > pair.games) pair = { a, b, games: t.games, wins: t.wins + together[b][a].wins };
   }));
   if (pair && pair.games > 0) {
-    rivalries.push(`${pair.a} en ${pair.b} zaten ${pair.games} keer samen aan tafel; samen pakten zij ${pair.wins} van die ${pair.games} potjes.`);
+    rivalries.push(`${pair.a} and ${pair.b} shared a table ${pair.games} times; between them they took ${pair.wins} of those ${pair.games} games.`);
   }
 
   // ----- Start player and rounds -----
