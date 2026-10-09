@@ -1,0 +1,49 @@
+{
+  "articles": [
+    {
+      "id": "2026-10-08-xyris",
+      "date": "2026-10-08",
+      "kicker": "Game report",
+      "headline": "Xyris Shakes the Pod, But Falls to Yshtola",
+      "deck": "Impact Tremors send two opponents packing, though the Grand Archenemy proves too much in the end.",
+      "byline": "By our correspondent",
+      "image": "assets/articles/2026-10-08-xyris.jpg",
+      "caption": "Xyris, the Tide’s Voice, unleashed her power — and the ground shook.",
+      "body": [
+        "Last night’s first Commander game started with *Xyris, the Tide’s Voice* at the helm, and it didn’t take long before the table felt the pressure. With a well-timed *Impact Tremors*, Xyris turned every spell into a threat, sending two opponents packing in spectacular fashion.",
+        "The first casualty fell to a massive wave of damage, as the tremors rippled through the battlefield. Not long after, the second player was swept away as well, unable to recover from the repeated shocks. What looked like a sure path to victory for Xyris quickly became a two-player showdown.",
+        "But when it came down to the final duel, Xyris ran out of steam. Facing *Yshtola, the Grand Archenemy*, the tide turned.",
+        "Yshtola’s relentless card advantage, combined with her signature control and value, outpaced Xyris in the late game. Despite a valiant effort and a board full of sea creatures, Xyris couldn’t close the deal, and the Grand Archenemy claimed the win.",
+        { "quote": "“Impact Tremors did exactly what I hoped — it just wasn’t enough in the end,” said Xyris’s pilot after the game. “Yshtola was on another level.”" },
+        "A stunning start, a hard-fought finish, and a reminder that in Commander, even the most explosive openings can’t always outlast a true archenemy."
+      ],
+      "numbers": [
+        ["Xyris (winner of 2 players)", "2"],
+        ["Yshtola (winner)", "1"],
+        ["Impact Tremors KOs", "2"]
+      ]
+    },
+    {
+      "id": "2026-10-08-marchesa",
+      "date": "2026-10-08",
+      "kicker": "Game report",
+      "headline": "Marchesa Shows No Mercy in Bracket 4 Brawl",
+      "deck": "All players face the Black Rose, who comes back stronger after a devastating board wipe.",
+      "byline": "By our correspondent",
+      "image": "assets/articles/2026-10-08-marchesa.jpg",
+      "caption": "Marchesa, the Black Rose — elegant, ruthless, and always one step ahead.",
+      "body": [
+        "The second game of the night was a true test of resilience, as all players lined up against a bracket 4 *Marchesa, the Black Rose*. From the very first turn, it was clear: this wouldn’t be an easy victory. Marchesa’s aristocratic charm quickly turned into lethal control, draining life, duplicating creatures, and building an overwhelming board presence.",
+        "Midway through the game, things looked grim for Marchesa when the table finally managed to coordinate a board wipe. For a moment, it seemed like her threat had been neutralized.",
+        "But as so often happens with *Marchesa, the Black Rose*, that was just a setback. She returned from the graveyard stronger than before, bringing back key pieces, reassembling her engine, and immediately regaining momentum.",
+        "What followed was a masterclass in inevitability. With every creature, every drain, and every political nudge, Marchesa wrapped the game back under her control. In the end, no one could stop the Black Rose, and she claimed the win — once again.",
+        { "quote": "“She died, she came back, and she just had more resources than anyone else,” said one of the defeated players. “Bracket 4 is no joke.”" }
+      ],
+      "numbers": [
+        ["Marchesa (winner)", "1"],
+        ["Bracket 4", "4"],
+        ["Board wipes survived", "1"]
+      ]
+    }
+  ]
+}
