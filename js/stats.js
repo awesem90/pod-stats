@@ -11,9 +11,16 @@ export const longDate = iso => { const d = dateOf(iso); return `${DAYS[d.getDay(
 export const monthYear = iso => { const d = dateOf(iso); return MONTHS[d.getMonth()] + ' ' + d.getFullYear(); };
 export const fmtMinutes = m => m >= 60 ? Math.floor(m / 60) + 'h ' + String(m % 60).padStart(2, '0') + 'm' : m + ' min';
 export const COLOR_NAME = { W: 'White', U: 'Blue', B: 'Black', R: 'Red', G: 'Green' };
-// The ten two-colour pairs in WUBRG order, with their Ravnica guild names.
-export const GUILD = { WU: 'Azorius', WB: 'Orzhov', WR: 'Boros', WG: 'Selesnya', UB: 'Dimir', UR: 'Izzet', UG: 'Simic', BR: 'Rakdos', BG: 'Golgari', RG: 'Gruul' };
-const PAIRS = Object.keys(GUILD);
+// Every colour identity (letters in WUBRG order) with its usual Magic name.
+export const COMBO_NAME = {
+  '': 'Colourless',
+  W: 'Mono-White', U: 'Mono-Blue', B: 'Mono-Black', R: 'Mono-Red', G: 'Mono-Green',
+  WU: 'Azorius', WB: 'Orzhov', WR: 'Boros', WG: 'Selesnya', UB: 'Dimir', UR: 'Izzet', UG: 'Simic', BR: 'Rakdos', BG: 'Golgari', RG: 'Gruul',
+  WUB: 'Esper', WUR: 'Jeskai', WUG: 'Bant', WBR: 'Mardu', WBG: 'Abzan', WRG: 'Naya', UBR: 'Grixis', UBG: 'Sultai', URG: 'Temur', BRG: 'Jund',
+  WUBR: 'Yore-Tree', WUBG: 'Witch-Maw', WURG: 'Ink-Treader', WBRG: 'Dune-Brood', UBRG: 'Glint-Eye',
+  WUBRG: 'Five-colour',
+};
+const COMBOS = Object.keys(COMBO_NAME);
 
 export function seasons(games) { return [...new Set(games.map(g => +g.date.slice(0, 4)))].sort(); }
 export function pickSeason(games) {
@@ -88,17 +95,23 @@ export function computeStats(allGames, { range, season }) {
   }
 
   // Colour habits always count every game a player ever played, whatever the edition:
-  // each game adds one per colour in the deck's identity. A colour pair only counts for
-  // decks that are exactly those two colours (an Abzan deck is not Golgari).
+  // each game adds one per colour in the deck's identity, and one for its exact colour
+  // combination (an Abzan deck counts as Abzan only, never as Golgari).
   const palette = {};
   for (const g of allGames) for (const s of g.seats) {
-    const a = palette[s.player] ||= { games: 0, colors: {}, pairs: {} };
+    if (!s.commander) continue;
+    const a = palette[s.player] ||= { games: 0, colors: {}, combos: {} };
     a.games++;
     s.colors.forEach(c => { a.colors[c] = (a.colors[c] || 0) + 1; });
-    if (s.colors.length === 2) { const k = s.colors.join(''); a.pairs[k] = (a.pairs[k] || 0) + 1; }
+    const k = s.colors.join('');
+    a.combos[k] = (a.combos[k] || 0) + 1;
   }
-  // Most games first; ties go to WUBRG order.
-  const top = (counts, order) => Object.entries(counts).sort((x, y) => y[1] - x[1] || order.indexOf(x[0]) - order.indexOf(y[0]))[0] || null;
+  // The most-played entries as { keys, n }; a tie returns all of them, in WUBRG order.
+  const top = (counts, order) => {
+    const n = Math.max(0, ...Object.values(counts));
+    const keys = Object.keys(counts).filter(k => counts[k] === n).sort((x, y) => order.indexOf(x) - order.indexOf(y));
+    return n ? { keys, n } : null;
+  };
 
   const avg = seats ? wins / seats * 100 : 0;
   // A rank needs a fair share of the edition's games, so 3 wins in 8 games can't top 11 in 31.
@@ -117,9 +130,9 @@ export function computeStats(allGames, { range, season }) {
       fastest: fastest(p.winList),
       winRounds: mean(p.winList.filter(w => w.rounds).map(w => w.rounds)),
       palette: {
-        games: palette[p.name].games,
-        color: top(palette[p.name].colors, 'WUBRG'),
-        pair: top(palette[p.name].pairs, PAIRS),
+        games: palette[p.name]?.games || 0,
+        color: top(palette[p.name]?.colors || {}, 'WUBRG'),
+        combo: top(palette[p.name]?.combos || {}, COMBOS),
       },
     };
   }).map(p => ({ ...p, qualified: p.games >= minGames }))

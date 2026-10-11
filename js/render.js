@@ -1,7 +1,7 @@
 // HTML for every page, set like an old broadsheet. Everything is built from the stats object.
 import { CONFIG } from './config.js';
 import { card, norm } from './data.js';
-import { pct, dec1, fmtStreak, fmtMinutes, shortDate, longDate, monthYear, COLOR_NAME, GUILD } from './stats.js';
+import { pct, dec1, fmtStreak, fmtMinutes, shortDate, longDate, monthYear, COLOR_NAME, COMBO_NAME } from './stats.js';
 
 export const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 export const playerHref = name => '#/player/' + encodeURIComponent(name);
@@ -23,6 +23,19 @@ function cmdLinks(parts, fallback = '—') {
     const uri = card(p)?.uri || 'https://scryfall.com/search?q=' + encodeURIComponent('!"' + p + '"');
     return `<a class="scry" href="${esc(uri)}" target="_blank" rel="noopener">${esc(p)}</a>`;
   }).join(' &amp; ');
+}
+
+// "WBG" -> symbols + "Abzan, White–Black–Green"; mono, five-colour and colourless need no spelled-out colours.
+function comboText(key) {
+  const colors = key.split('').filter(Boolean);
+  const spelled = colors.length >= 2 && colors.length <= 4 ? ', ' + colors.map(c => COLOR_NAME[c]).join('–') : '';
+  return `${mana(colors)} ${COMBO_NAME[key]}${spelled}`.trim();
+}
+
+// A favourite from stats ({ keys, n }); ties are shown together: "Esper / Mardu (6 each of 33 games)".
+function favText(top, label, total) {
+  if (!top) return '—';
+  return top.keys.map(label).join(' / ') + ` (${top.n}${top.keys.length > 1 ? ' each' : ''} of ${plural(total, 'game')})`;
 }
 
 function mana(colors) {
@@ -234,7 +247,7 @@ export function profile(st, name) {
   const tried = decks.filter(d => d.games >= 2);
   const best = (tried.length ? tried : decks).slice().sort((a, b) => b.exact - a.exact || b.games - a.games)[0];
   // Colour habits count all of this player's games, whatever the edition (see stats.js).
-  const { color: fav, pair, games: allGames } = p.palette;
+  const { color: fav, combo, games: allGames } = p.palette;
   const since = st.firstSeen[p.name];
 
   const facts = [
@@ -244,8 +257,8 @@ export function profile(st, name) {
     ['Average rounds per win', p.winRounds ? dec1(p.winRounds) : '—'],
     ['Fastest win', p.fastest ? `${rounds(p.fastest.rounds)}, ${shortDate(p.fastest.date)}` : '—'],
     ['Best deck', best ? `${esc(best.name)} (${best.rate}%)` : '—'],
-    ['Favourite colour', fav ? `${mana([fav[0]])} ${COLOR_NAME[fav[0]]} (${fav[1]} of ${plural(allGames, 'game')})` : '—'],
-    ['Most common colour pair', pair ? `${mana(pair[0].split(''))} ${GUILD[pair[0]]}, ${pair[0].split('').map(c => COLOR_NAME[c]).join('–')} (${pair[1]} of ${plural(allGames, 'game')})` : 'none (no two-colour decks)'],
+    ['Favourite colour', favText(fav, k => `${mana([k])} ${COLOR_NAME[k]}`, allGames)],
+    ['Favourite colour combination', favText(combo, comboText, allGames)],
   ];
 
   const vs = st.matrix.find(r => r.name === p.name).cells.filter(c => c && c.games).sort((a, b) => b.rate - a.rate);
