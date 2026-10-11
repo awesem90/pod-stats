@@ -1,7 +1,7 @@
 // HTML for every page, set like an old broadsheet. Everything is built from the stats object.
 import { CONFIG } from './config.js';
 import { card, norm } from './data.js';
-import { pct, dec1, fmtStreak, fmtMinutes, shortDate, longDate, monthYear, COLOR_NAME } from './stats.js';
+import { pct, dec1, fmtStreak, fmtMinutes, shortDate, longDate, monthYear, COLOR_NAME, GUILD } from './stats.js';
 
 export const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 export const playerHref = name => '#/player/' + encodeURIComponent(name);
@@ -233,7 +233,8 @@ export function profile(st, name) {
   // One lucky game shouldn't make a "best deck": prefer decks played at least twice.
   const tried = decks.filter(d => d.games >= 2);
   const best = (tried.length ? tried : decks).slice().sort((a, b) => b.exact - a.exact || b.games - a.games)[0];
-  const fav = Object.keys(p.colorGames).sort((a, b) => p.colorGames[b] - p.colorGames[a])[0];
+  // Colour habits count all of this player's games, whatever the edition (see stats.js).
+  const { color: fav, pair, games: allGames } = p.palette;
   const since = st.firstSeen[p.name];
 
   const facts = [
@@ -243,7 +244,8 @@ export function profile(st, name) {
     ['Average rounds per win', p.winRounds ? dec1(p.winRounds) : '—'],
     ['Fastest win', p.fastest ? `${rounds(p.fastest.rounds)}, ${shortDate(p.fastest.date)}` : '—'],
     ['Best deck', best ? `${esc(best.name)} (${best.rate}%)` : '—'],
-    ['Favourite colour', fav ? COLOR_NAME[fav] : '—'],
+    ['Favourite colour', fav ? `${mana([fav[0]])} ${COLOR_NAME[fav[0]]} (${fav[1]} of ${plural(allGames, 'game')})` : '—'],
+    ['Most common colour pair', pair ? `${mana(pair[0].split(''))} ${GUILD[pair[0]]}, ${pair[0].split('').map(c => COLOR_NAME[c]).join('–')} (${pair[1]} of ${plural(allGames, 'game')})` : '—'],
   ];
 
   const vs = st.matrix.find(r => r.name === p.name).cells.filter(c => c && c.games).sort((a, b) => b.rate - a.rate);

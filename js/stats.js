@@ -11,6 +11,9 @@ export const longDate = iso => { const d = dateOf(iso); return `${DAYS[d.getDay(
 export const monthYear = iso => { const d = dateOf(iso); return MONTHS[d.getMonth()] + ' ' + d.getFullYear(); };
 export const fmtMinutes = m => m >= 60 ? Math.floor(m / 60) + 'h ' + String(m % 60).padStart(2, '0') + 'm' : m + ' min';
 export const COLOR_NAME = { W: 'White', U: 'Blue', B: 'Black', R: 'Red', G: 'Green' };
+// The ten two-colour pairs in WUBRG order, with their Ravnica guild names.
+export const GUILD = { WU: 'Azorius', WB: 'Orzhov', WR: 'Boros', WG: 'Selesnya', UB: 'Dimir', UR: 'Izzet', UG: 'Simic', BR: 'Rakdos', BG: 'Golgari', RG: 'Gruul' };
+const PAIRS = Object.keys(GUILD);
 
 export function seasons(games) { return [...new Set(games.map(g => +g.date.slice(0, 4)))].sort(); }
 export function pickSeason(games) {
@@ -50,7 +53,7 @@ export function computeStats(allGames, { range, season }) {
   const P = new Map(); // player -> stats
   const C = new Map(); // commander -> stats
   const player = name => {
-    if (!P.has(name)) P.set(name, { name, games: 0, wins: 0, results: [], commanders: [], decks: new Map(), log: [], colorGames: {}, starts: 0, startWins: 0, winList: [] });
+    if (!P.has(name)) P.set(name, { name, games: 0, wins: 0, results: [], commanders: [], decks: new Map(), log: [], starts: 0, startWins: 0, winList: [] });
     return P.get(name);
   };
   let seats = 0, wins = 0;
@@ -72,7 +75,6 @@ export function computeStats(allGames, { range, season }) {
       const d = p.decks.get(s.commander) || { name: s.commander, parts: s.parts, colors: s.colors, games: 0, wins: 0 };
       d.games++; if (s.win) d.wins++;
       p.decks.set(s.commander, d);
-      s.colors.forEach(c => { p.colorGames[c] = (p.colorGames[c] || 0) + 1; });
 
       const c = C.get(s.commander) || { name: s.commander, parts: s.parts, colors: s.colors, games: 0, wins: 0, pilots: new Map(), rounds: [], winList: [], last: '' };
       c.games++; if (s.win) { c.wins++; c.winList.push(win); }
@@ -84,6 +86,20 @@ export function computeStats(allGames, { range, season }) {
       C.set(s.commander, c);
     }
   }
+
+  // Colour habits always count every game a player ever played, whatever the edition:
+  // each game adds one per colour in the deck's identity, and one per two-colour pair in it.
+  const palette = {};
+  for (const g of allGames) for (const s of g.seats) {
+    const a = palette[s.player] ||= { games: 0, colors: {}, pairs: {} };
+    a.games++;
+    s.colors.forEach((c, i) => {
+      a.colors[c] = (a.colors[c] || 0) + 1;
+      s.colors.slice(i + 1).forEach(d => { a.pairs[c + d] = (a.pairs[c + d] || 0) + 1; });
+    });
+  }
+  // Most games first; ties go to WUBRG order.
+  const top = (counts, order) => Object.entries(counts).sort((x, y) => y[1] - x[1] || order.indexOf(x[0]) - order.indexOf(y[0]))[0] || null;
 
   const avg = seats ? wins / seats * 100 : 0;
   // A rank needs a fair share of the edition's games, so 3 wins in 8 games can't top 11 in 31.
@@ -101,6 +117,11 @@ export function computeStats(allGames, { range, season }) {
       mainColors: mainDeck ? p.decks.get(mainDeck).colors : [],
       fastest: fastest(p.winList),
       winRounds: mean(p.winList.filter(w => w.rounds).map(w => w.rounds)),
+      palette: {
+        games: palette[p.name].games,
+        color: top(palette[p.name].colors, 'WUBRG'),
+        pair: top(palette[p.name].pairs, PAIRS),
+      },
     };
   }).map(p => ({ ...p, qualified: p.games >= minGames }))
     // Players below the threshold are listed after the ranked ones, without a rank.
