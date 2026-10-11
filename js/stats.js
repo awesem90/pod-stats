@@ -20,7 +20,6 @@ export const COMBO_NAME = {
   WUBR: 'Yore-Tree', WUBG: 'Witch-Maw', WURG: 'Ink-Treader', WBRG: 'Dune-Brood', UBRG: 'Glint-Eye',
   WUBRG: 'Five-colour',
 };
-const COMBOS = Object.keys(COMBO_NAME);
 
 export function seasons(games) { return [...new Set(games.map(g => +g.date.slice(0, 4)))].sort(); }
 export function pickSeason(games) {
@@ -98,14 +97,21 @@ export function computeStats(allGames, { range, season }) {
   // each game adds one per colour in the deck's identity, and one for its exact colour
   // combination (an Abzan deck counts as Abzan only, never as Golgari).
   const palette = {};
-  for (const g of allGames) for (const s of g.seats) {
-    if (!s.commander) continue;
-    const a = palette[s.player] ||= { games: 0, colors: {}, combos: {} };
+  allGames.forEach((g, i) => g.seats.forEach(s => {
+    if (!s.commander) return;
+    const a = palette[s.player] ||= { games: 0, colors: {}, combos: {}, comboWins: {}, comboLast: {} };
     a.games++;
     s.colors.forEach(c => { a.colors[c] = (a.colors[c] || 0) + 1; });
     const k = s.colors.join('');
     a.combos[k] = (a.combos[k] || 0) + 1;
-  }
+    a.comboWins[k] = (a.comboWins[k] || 0) + (s.win ? 1 : 0);
+    a.comboLast[k] = i;
+  }));
+  // One favourite combination: most games, then most wins with it, then the most recently played.
+  const topCombo = a => {
+    const k = Object.keys(a.combos).sort((x, y) => a.combos[y] - a.combos[x] || a.comboWins[y] - a.comboWins[x] || a.comboLast[y] - a.comboLast[x])[0];
+    return k === undefined ? null : { keys: [k], n: a.combos[k] };
+  };
   // The most-played entries as { keys, n }; a tie returns all of them, in WUBRG order.
   const top = (counts, order) => {
     const n = Math.max(0, ...Object.values(counts));
@@ -132,7 +138,7 @@ export function computeStats(allGames, { range, season }) {
       palette: {
         games: palette[p.name]?.games || 0,
         color: top(palette[p.name]?.colors || {}, 'WUBRG'),
-        combo: top(palette[p.name]?.combos || {}, COMBOS),
+        combo: palette[p.name] ? topCombo(palette[p.name]) : null,
       },
     };
   }).map(p => ({ ...p, qualified: p.games >= minGames }))

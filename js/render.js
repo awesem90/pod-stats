@@ -25,12 +25,8 @@ function cmdLinks(parts, fallback = '—') {
   }).join(' &amp; ');
 }
 
-// "WBG" -> symbols + "Abzan, White–Black–Green"; mono, five-colour and colourless need no spelled-out colours.
-function comboText(key) {
-  const colors = key.split('').filter(Boolean);
-  const spelled = colors.length >= 2 && colors.length <= 4 ? ', ' + colors.map(c => COLOR_NAME[c]).join('–') : '';
-  return `${mana(colors)} ${COMBO_NAME[key]}${spelled}`.trim();
-}
+// "WBG" -> colour symbols + "Abzan".
+const comboText = key => `${mana(key.split('').filter(Boolean))} ${COMBO_NAME[key]}`.trim();
 
 // A favourite from stats ({ keys, n }); ties are shown together: "Esper / Mardu (6 each of 33 games)".
 function favText(top, label, total) {
