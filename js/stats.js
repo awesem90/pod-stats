@@ -88,15 +88,14 @@ export function computeStats(allGames, { range, season }) {
   }
 
   // Colour habits always count every game a player ever played, whatever the edition:
-  // each game adds one per colour in the deck's identity, and one per two-colour pair in it.
+  // each game adds one per colour in the deck's identity. A colour pair only counts for
+  // decks that are exactly those two colours (an Abzan deck is not Golgari).
   const palette = {};
   for (const g of allGames) for (const s of g.seats) {
     const a = palette[s.player] ||= { games: 0, colors: {}, pairs: {} };
     a.games++;
-    s.colors.forEach((c, i) => {
-      a.colors[c] = (a.colors[c] || 0) + 1;
-      s.colors.slice(i + 1).forEach(d => { a.pairs[c + d] = (a.pairs[c + d] || 0) + 1; });
-    });
+    s.colors.forEach(c => { a.colors[c] = (a.colors[c] || 0) + 1; });
+    if (s.colors.length === 2) { const k = s.colors.join(''); a.pairs[k] = (a.pairs[k] || 0) + 1; }
   }
   // Most games first; ties go to WUBRG order.
   const top = (counts, order) => Object.entries(counts).sort((x, y) => y[1] - x[1] || order.indexOf(x[0]) - order.indexOf(y[0]))[0] || null;

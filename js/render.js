@@ -245,7 +245,7 @@ export function profile(st, name) {
     ['Fastest win', p.fastest ? `${rounds(p.fastest.rounds)}, ${shortDate(p.fastest.date)}` : '—'],
     ['Best deck', best ? `${esc(best.name)} (${best.rate}%)` : '—'],
     ['Favourite colour', fav ? `${mana([fav[0]])} ${COLOR_NAME[fav[0]]} (${fav[1]} of ${plural(allGames, 'game')})` : '—'],
-    ['Most common colour pair', pair ? `${mana(pair[0].split(''))} ${GUILD[pair[0]]}, ${pair[0].split('').map(c => COLOR_NAME[c]).join('–')} (${pair[1]} of ${plural(allGames, 'game')})` : '—'],
+    ['Most common colour pair', pair ? `${mana(pair[0].split(''))} ${GUILD[pair[0]]}, ${pair[0].split('').map(c => COLOR_NAME[c]).join('–')} (${pair[1]} of ${plural(allGames, 'game')})` : 'none (no two-colour decks)'],
   ];
 
   const vs = st.matrix.find(r => r.name === p.name).cells.filter(c => c && c.games).sort((a, b) => b.rate - a.rate);
