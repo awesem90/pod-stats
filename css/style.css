@@ -240,14 +240,24 @@ blockquote::before { content: '\201C'; } blockquote::after { content: '\201D'; }
 .report.top .report-head { font-size: clamp(32px, 4.6vw, 56px); line-height: 1.04; }
 .report.top .deck { font-size: 20px; }
 .reports + .front, .top-story + .front { border-top: 3px double var(--rule); padding-top: 14px; }
-@media (min-width: 901px) {
-  .report.top { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); grid-template-rows: repeat(5, auto) 1fr; column-gap: 28px; align-items: start; }
-  .report.top > .kicker, .report.top > .report-head, .report.top > .deck, .report.top > .byline { grid-column: 1 / -1; }
-  .report.top > .photo { grid-column: 1; grid-row: 5; }
-  .report.top > .numbers { grid-column: 1; grid-row: 6; }
-  .report.top > .story { grid-column: 2; grid-row: 5 / span 2; columns: 2 220px; column-rule: 1px solid var(--rule-soft); }
+/* Wide reports flow photo, story and numbers through balanced newspaper columns,
+   so the columns end level whatever the length of the article. */
+@media (min-width: 701px) {
+  .report.wide .report-body { columns: 3 220px; column-gap: 26px; column-rule: 1px solid var(--rule-soft); }
+  .report.wide .report-body > .story { columns: auto; display: contents; }
+  .report.wide .report-body > .photo { break-inside: avoid; margin-top: 2px; }
+  .report.wide .report-body > .photo .halftone { aspect-ratio: 4 / 3; }
+  .report.wide .story p { break-inside: auto; }
 }
 
 /* Scryfall links on commander names: underlined like a reference, so they read as links in body type */
 a.scry { text-decoration: underline; text-decoration-color: var(--rule-soft); text-underline-offset: 2px; }
 a.scry:hover { text-decoration-color: var(--ink); }
+
+/* A report alone in its row spans the page, so it gets the photo-beside-text layout too. */
+.reports .report.wide { padding: 0; border-left: 0; }
+
+/* Flavour text, set like the italic lines at the bottom of a Magic card */
+.flavor { font-style: italic; color: var(--ink-2); text-indent: 0 !important; margin: 4px 0 12px; padding-left: 12px; border-left: 2px solid var(--rule-soft); break-inside: avoid; }
+.flavor cite { display: block; font-style: normal; font-variant: small-caps; letter-spacing: 0.05em; font-size: 13.5px; color: var(--ink-3); margin-top: 2px; }
+.flavor cite::before { content: '\2014\00A0'; }

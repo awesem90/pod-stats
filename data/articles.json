@@ -13,13 +13,21 @@
       "caption": "*Sokka, Tenacious Tactician* leads the charge.",
       "credit": "Illustration: Robin Har / Scryfall",
       "body": [
-        "Patrick took the first game of the night with *Celes, Rune Knight*, and nobody at the table could say they hadn’t been warned. Celes was a threat from the opening turns, and the creatures that hit the graveyard kept coming back for more. Over eight rounds, that persistent, recurring army pummeled everyone to death.",
-        "The second game belonged to Sem and *Sokka, Tenacious Tactician*. When Toon’s *Sokrates, Athenian Teacher* handed over six cards, Sem stormed off into a lengthy turn — long, but game-winning — and closed it out in seven rounds."
+        "The shuffling had barely stopped on Thursday night when the first warnings went out. Lennart, sleeving up *Koma, World-Eater* for the very first time, took the opening turn. Sem brought *Rendmaw, Creaking Nest*, Toon the fearsome *Indoraptor, the Perfect Hybrid*. But the name everybody kept glancing at was Patrick’s *Celes, Rune Knight*.",
+        "They were right to. Celes was a threat from the opening turns, and nobody at the table could say they hadn’t been warned. Every answer bought only a little time: creatures went to the graveyard and simply climbed back out, each return more stubborn than the last. Eight rounds and nearly an hour and a half later, that persistent, recurring army had pummeled everyone to death.",
+        { "flavor": "The fallen do not rest. Not while I still stand.", "source": "Celes, Rune Knight" },
+        "It was Celes’s first win in six outings — proof that patience is a deck strategy too. The table voted *Slagstorm* card of the match.",
+        "The second game was quicker, but no less dramatic. Toon went first with *Sokrates, Athenian Teacher*, Lennart switched to *Ghyrson Starn, Kelermorph*, and Patrick reached for *Cloud, Ex-SOLDIER*. Sem sat down behind *Sokka, Tenacious Tactician*.",
+        "Then came a lesson nobody had asked for. Sokrates handed Sem six cards — a gift, in the philosopher’s eyes. Sem saw ammunition. What followed was one long turn, the kind where the rest of the table starts doing the maths on whether they will ever see another one. Long, yes. But game-winning.",
+        { "flavor": "A good plan uses what you’re given. A great plan uses what they give you.", "source": "Sokka, Tenacious Tactician" },
+        "Seven rounds and just under an hour after it began, it was over, and *Sokrates* — fittingly — was named card of the match. Sokka now stands at two wins from three games for Sem."
       ],
       "numbers": [
-        ["Celes game, rounds", "8"],
+        ["Celes, first win in", "6 games"],
+        ["Celes game", "8 rounds, 1h 29m"],
         ["Cards handed over by Sokrates", "6"],
-        ["Sokka game, rounds", "7"]
+        ["Sokka game", "7 rounds, 59 min"],
+        ["Sokka for Sem", "2 wins in 3"]
       ]
     },
     {
@@ -33,17 +41,21 @@
       "image": "assets/articles/2026-10-08-xyris.jpg",
       "caption": "Xyris, the Tide’s Voice, unleashed her power — and the ground shook.",
       "body": [
+        "Four commanders took their seats for the opener: Raoul’s *Xyris*, Patrick’s *Y’shtola, Night’s Blessed*, Lennart’s *Skullbriar, the Walking Grave* and Sem’s *Don Andres, the Renegade*. Patrick had the first turn.",
         "Last night’s first Commander game started with *Xyris, the Tide’s Voice* at the helm, and it didn’t take long before the table felt the pressure. With a well-timed *Impact Tremors*, Xyris turned every spell into a threat, sending two opponents packing in spectacular fashion.",
         "The first casualty fell to a massive wave of damage, as the tremors rippled through the battlefield. Not long after, the second player was swept away as well, unable to recover from the repeated shocks. What looked like a sure path to victory for Xyris quickly became a two-player showdown.",
         "But when it came down to the final duel, Xyris ran out of steam. Facing *Yshtola, the Grand Archenemy*, the tide turned.",
         "Yshtola’s relentless card advantage, combined with her signature control and value, outpaced Xyris in the late game. Despite a valiant effort and a board full of sea creatures, Xyris couldn’t close the deal, and the Grand Archenemy claimed the win.",
         { "quote": "“Impact Tremors did exactly what I hoped — it just wasn’t enough in the end,” said Xyris’s pilot after the game. “Yshtola was on another level.”" },
-        "A stunning start, a hard-fought finish, and a reminder that in Commander, even the most explosive openings can’t always outlast a true archenemy."
+        "A stunning start, a hard-fought finish, and a reminder that in Commander, even the most explosive openings can’t always outlast a true archenemy.",
+        { "flavor": "The storm does not care who started it. It only cares who is left standing.", "source": "Y’shtola, Night’s Blessed" }
       ],
       "numbers": [
         ["Xyris (winner of 2 players)", "2"],
         ["Yshtola (winner)", "1"],
-        ["Impact Tremors KOs", "2"]
+        ["Impact Tremors KOs", "2"],
+        ["Game length", "7 rounds, 48 min"],
+        ["Card of the match", "Authority of the Consuls"]
       ]
     },
     {
@@ -57,8 +69,10 @@
       "image": "assets/articles/2026-10-08-marchesa.jpg",
       "caption": "Marchesa, the Black Rose — elegant, ruthless, and always one step ahead.",
       "body": [
+        "Lennart sleeved up *Marchesa, the Black Rose* for the nightcap, facing Raoul’s *Zimone, Mystery Unraveler*, Patrick’s *Cloud, Ex-SOLDIER* and Sem’s *Sokka, Tenacious Tactician*. Raoul went first; it would take ten rounds and more than an hour and a half to settle.",
         "The second game of the night was a true test of resilience, as all players lined up against a bracket 4 *Marchesa, the Black Rose*. From the very first turn, it was clear: this wouldn’t be an easy victory. Marchesa’s aristocratic charm quickly turned into lethal control, draining life, duplicating creatures, and building an overwhelming board presence.",
         "Midway through the game, things looked grim for Marchesa when the table finally managed to coordinate a board wipe. For a moment, it seemed like her threat had been neutralized.",
+        { "flavor": "Every rose returns in spring. Mine return by evening.", "source": "Marchesa, the Black Rose" },
         "But as so often happens with *Marchesa, the Black Rose*, that was just a setback. She returned from the graveyard stronger than before, bringing back key pieces, reassembling her engine, and immediately regaining momentum.",
         "What followed was a masterclass in inevitability. With every creature, every drain, and every political nudge, Marchesa wrapped the game back under her control. In the end, no one could stop the Black Rose, and she claimed the win — once again.",
         { "quote": "“She died, she came back, and she just had more resources than anyone else,” said one of the defeated players. “Bracket 4 is no joke.”" }
@@ -66,7 +80,9 @@
       "numbers": [
         ["Marchesa (winner)", "1"],
         ["Bracket 4", "4"],
-        ["Board wipes survived", "1"]
+        ["Board wipes survived", "1"],
+        ["Game length", "10 rounds, 1h 37m"],
+        ["Card of the match", "Marchesa herself"]
       ]
     }
   ]

@@ -104,17 +104,25 @@ function standingsTable(st) {
 }
 
 // A written game report from data/articles.json.
-function report(a, top = false) {
-  const body = a.body.map(b => typeof b === 'string' ? `<p>${inline(b)}</p>` : `<p class="pull">${inline(b.quote)}</p>`).join('');
+// Body items: a string is a paragraph, { quote } a pull quote, { flavor, source } in-world flavour text.
+const bodyItem = b => typeof b === 'string' ? `<p>${inline(b)}</p>`
+  : b.flavor ? `<p class="flavor">${inline(b.flavor)}${b.source ? `<cite>${esc(b.source)}</cite>` : ''}</p>`
+  : `<p class="pull">${inline(b.quote)}</p>`;
+
+// top: the lead story's big headline; wide: photo beside the text (used when the report spans the page).
+function report(a, { top = false, wide = false } = {}) {
+  const body = a.body.map(bodyItem).join('');
   return `
-  <article class="report${top ? ' top' : ''}">
+  <article class="report${top ? ' top' : ''}${wide ? ' wide' : ''}">
     <p class="kicker">${esc(a.kicker || 'Report')} · ${longDate(a.date)}</p>
     <h2 class="report-head">${esc(a.headline)}</h2>
     ${a.deck ? `<p class="deck">${inline(a.deck)}</p>` : ''}
     ${a.byline ? `<p class="byline">${esc(a.byline)}</p>` : ''}
+    <div class="report-body">
     ${a.image ? `<figure class="photo"><span class="halftone"><img src="${esc(a.image)}" alt="" loading="lazy"${a.imageFocus ? ` style="object-position:${esc(a.imageFocus)}"` : ''}></span>${a.caption || a.credit ? `<figcaption>${a.caption ? inline(a.caption) + ' ' : ''}${a.credit ? `<span class="credit">${esc(a.credit)}</span>` : ''}</figcaption>` : ''}</figure>` : ''}
     <div class="story">${body}</div>
     ${a.numbers?.length ? `<aside class="numbers"><h3>By the numbers</h3><dl>${a.numbers.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}</dl></aside>` : ''}
+    </div>
   </article>`;
 }
 
@@ -189,8 +197,8 @@ export function overview(st, articles = []) {
 
   return `
   <div class="page">
-    ${topStory ? `<section class="top-story">${report(topStory, true)}</section>` : ''}
-    ${more.length ? `<section class="reports">${more.map(a => report(a)).join('')}</section>` : ''}
+    ${topStory ? `<section class="top-story">${report(topStory, { top: true, wide: true })}</section>` : ''}
+    ${more.length ? `<section class="reports">${more.map(a => report(a, { wide: more.length === 1 })).join('')}</section>` : ''}
 
     <section class="front">
       <article class="lead-story">
