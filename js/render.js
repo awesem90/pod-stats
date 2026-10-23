@@ -112,7 +112,7 @@ function report(a, top = false) {
     <h2 class="report-head">${esc(a.headline)}</h2>
     ${a.deck ? `<p class="deck">${inline(a.deck)}</p>` : ''}
     ${a.byline ? `<p class="byline">${esc(a.byline)}</p>` : ''}
-    ${a.image ? `<figure class="photo"><span class="halftone"><img src="${esc(a.image)}" alt="" loading="lazy"></span>${a.caption ? `<figcaption>${inline(a.caption)}</figcaption>` : ''}</figure>` : ''}
+    ${a.image ? `<figure class="photo"><span class="halftone"><img src="${esc(a.image)}" alt="" loading="lazy"${a.imageFocus ? ` style="object-position:${esc(a.imageFocus)}"` : ''}></span>${a.caption || a.credit ? `<figcaption>${a.caption ? inline(a.caption) + ' ' : ''}${a.credit ? `<span class="credit">${esc(a.credit)}</span>` : ''}</figcaption>` : ''}</figure>` : ''}
     <div class="story">${body}</div>
     ${a.numbers?.length ? `<aside class="numbers"><h3>By the numbers</h3><dl>${a.numbers.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}</dl></aside>` : ''}
   </article>`;

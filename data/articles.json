@@ -1,6 +1,28 @@
 {
   "articles": [
     {
+      "id": "2026-10-22-celes-sokka",
+      "date": "2026-10-22",
+      "time": "22:04",
+      "kicker": "Game report",
+      "headline": "Celes Grinds the Pod Down, Then Sokka Storms the Night",
+      "deck": "Patrick’s undying army takes the opener; Sem turns six gifted cards into one long, decisive turn.",
+      "byline": "By our correspondent",
+      "image": "https://cards.scryfall.io/art_crop/front/f/0/f0fa5897-1da7-488f-bb19-1632e969c050.jpg?1783904920",
+      "imageFocus": "center 18%",
+      "caption": "*Sokka, Tenacious Tactician* leads the charge.",
+      "credit": "Illustration: Robin Har / Scryfall",
+      "body": [
+        "Patrick took the first game of the night with *Celes, Rune Knight*, and nobody at the table could say they hadn’t been warned. Celes was a threat from the opening turns, and the creatures that hit the graveyard kept coming back for more. Over eight rounds, that persistent, recurring army pummeled everyone to death.",
+        "The second game belonged to Sem and *Sokka, Tenacious Tactician*. When Toon’s *Sokrates, Athenian Teacher* handed over six cards, Sem stormed off into a lengthy turn — long, but game-winning — and closed it out in seven rounds."
+      ],
+      "numbers": [
+        ["Celes game, rounds", "8"],
+        ["Cards handed over by Sokrates", "6"],
+        ["Sokka game, rounds", "7"]
+      ]
+    },
+    {
       "id": "2026-10-08-xyris",
       "time": "20:20",
       "date": "2026-10-08",

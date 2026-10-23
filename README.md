@@ -40,7 +40,7 @@ The front page opens with the written reports from `data/articles.json`, newest 
 }
 ```
 
-Put the image in `assets/articles/`. Any size works: the site crops it to the column and prints it in halftone.
+Put the image in `assets/articles/`, or use a Scryfall art URL. Any size works: the site crops it to the column and prints it in halftone. Optional fields: `imageFocus` (a CSS position such as `"center 18%"`, to keep a face in the crop) and `credit` (e.g. `"Illustration: Robin Har / Scryfall"`).
 
 ## Files
 
