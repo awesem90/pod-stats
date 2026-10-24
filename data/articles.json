@@ -1,6 +1,34 @@
 {
   "articles": [
     {
+      "id": "2026-10-23-fall-of-the-fellowship",
+      "date": "2026-10-23",
+      "time": "21:54",
+      "kicker": "Poetry corner",
+      "headline": "The Fall of the Fellowship",
+      "deck": "A lament in three stanzas for Frodo, Sam and a Shire that never saw Satoru coming.",
+      "byline": "By our poet laureate",
+      "image": "https://cards.scryfall.io/art_crop/front/8/8/8887f26d-b097-4fbc-9c48-bdc656409a32.jpg?1783923830",
+      "imageFocus": "center 35%",
+      "caption": "*Satoru Umezawa* — and a nightmare or two.",
+      "credit": "Illustration: Anna Pavleeva / Scryfall",
+      "body": [
+        "Some games deserve a match report. This one deserved a lament. The night’s second game ran twelve rounds and two hours and five minutes — among the longest the pod has played this year. Sem went first with *Frodo, Adventurous Hobbit* and *Sam, Loyal Attendant*; Bart brought *Teval, the Balanced Scale*, Raoul *Monk Gyatso*, and Mauro *Satoru Umezawa*. Our poet laureate filed the rest in verse.",
+        { "verse": ["Twelve rounds of battle, two hours of pain,", "The Hobbits marched boldly, but all was in vain.", "Frodo clutched his ring, Sam readied the stew,", "But Satoru emerged with a nightmare or two."] },
+        { "verse": ["No second breakfast, no glorious feast,", "Just Hobbits reduced to bugs for the beast.", "With curses and creatures, he crushed every plan,", "Not even the Ring could save Frodo and Sam."] },
+        { "verse": ["Bart watched the chaos, Raoul held his ground,", "While Satoru’s terror spread all around.", "The Shire fell silent, the Fellowship slain⁠—", "Next time, bring removal. Or don’t queue again. 💀🍃"] },
+        { "flavor": "A ring makes you invisible. It does not make you safe.", "source": "Satoru Umezawa" },
+        "Satoru now stands at four wins from eleven games for Mauro. The table named *Hullbreaker Horror* card of the match."
+      ],
+      "numbers": [
+        ["Rounds", "12"],
+        ["Game length", "2h 05m"],
+        ["Second breakfasts served", "0"],
+        ["Satoru for Mauro", "4 wins in 11"],
+        ["Card of the match", "Hullbreaker Horror"]
+      ]
+    },
+    {
       "id": "2026-10-22-celes-sokka",
       "date": "2026-10-22",
       "time": "22:04",

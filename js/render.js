@@ -104,8 +104,10 @@ function standingsTable(st) {
 }
 
 // A written game report from data/articles.json.
-// Body items: a string is a paragraph, { quote } a pull quote, { flavor, source } in-world flavour text.
+// Body items: a string is a paragraph, { quote } a pull quote, { flavor, source } in-world flavour text,
+// { verse: [lines] } one stanza of a poem.
 const bodyItem = b => typeof b === 'string' ? `<p>${inline(b)}</p>`
+  : b.verse ? `<p class="verse">${b.verse.map(l => `<span class="line">${inline(l)}</span>`).join('')}</p>`
   : b.flavor ? `<p class="flavor">${inline(b.flavor)}${b.source ? `<cite>${esc(b.source)}</cite>` : ''}</p>`
   : `<p class="pull">${inline(b.quote)}</p>`;
 

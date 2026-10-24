@@ -261,3 +261,10 @@ a.scry:hover { text-decoration-color: var(--ink); }
 .flavor { font-style: italic; color: var(--ink-2); text-indent: 0 !important; margin: 4px 0 12px; padding-left: 12px; border-left: 2px solid var(--rule-soft); break-inside: avoid; }
 .flavor cite { display: block; font-style: normal; font-variant: small-caps; letter-spacing: 0.05em; font-size: 13.5px; color: var(--ink-3); margin-top: 2px; }
 .flavor cite::before { content: '\2014\00A0'; }
+
+/* Poems: one stanza per block, flush left, never split across columns */
+.story .verse { text-indent: 0 !important; text-align: left; hyphens: manual; font-size: 16.5px; line-height: 1.55; margin: 0 0 14px; padding-left: 4px; break-inside: avoid; }
+.story .verse::first-letter { all: unset; }
+/* Each verse line on its own; a line that wraps in a narrow column hangs indented, so it reads as a continuation */
+.story .verse .line { display: block; padding-left: 1.1em; text-indent: -1.1em; }
+.report.wide .story p.verse, .report.wide .story p.flavor { break-inside: avoid; }

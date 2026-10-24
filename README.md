@@ -35,7 +35,7 @@ The front page opens with the written reports from `data/articles.json`, newest 
   "byline": "By our correspondent",
   "image": "assets/articles/2026-10-08-marchesa.jpg",
   "caption": "Photo caption.",
-  "body": ["A paragraph. *Card names* in asterisks become italics.", { "quote": "A pull quote." }, { "flavor": "In-world flavour text.", "source": "Sokka, Tenacious Tactician" }],
+  "body": ["A paragraph. *Card names* in asterisks become italics.", { "quote": "A pull quote." }, { "flavor": "In-world flavour text.", "source": "Sokka, Tenacious Tactician" }, { "verse": ["A poem stanza,", "one line per entry."] }],
   "numbers": [["Board wipes survived", "1"]]
 }
 ```
