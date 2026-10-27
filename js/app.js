@@ -1,5 +1,5 @@
 import { fetchPod, cachedPod } from './data.js';
-import { computeStats, pickSeason } from './stats.js';
+import { computeStats, pickSeason, seasons } from './stats.js';
 import { header, footer, overview, profile, commanders, plays, skeleton, errorPanel } from './render.js';
 
 const app = document.getElementById('app');
@@ -8,10 +8,12 @@ const pref = {
   set(k, v) { try { localStorage.setItem('podstats:' + k, v); } catch { /* ignore */ } },
 };
 
+// Editions: 'all', 'last10', 'season-2025' etc., and 'season' meaning the current season.
 const RANGES = ['last10', 'season', 'all'];
+const validRange = r => RANGES.includes(r) || /^season-\d{4}$/.test(r || '');
 // Each page has its own edition; everything but the results page defaults to all games.
 const DEFAULT_RANGE = { overview: 'all', player: 'all', commanders: 'all', plays: 'season' };
-const rangeFor = screen => { const r = pref.get('range:' + screen); return RANGES.includes(r) ? r : DEFAULT_RANGE[screen]; };
+const rangeFor = screen => { const r = pref.get('range:' + screen); return validRange(r) ? r : DEFAULT_RANGE[screen]; };
 
 const state = {
   pod: null, // { games, generated }
@@ -20,10 +22,19 @@ const state = {
 };
 
 let memo = { key: null, stats: null };
-function stats(range) {
-  const season = pickSeason(state.pod.games);
+function stats(edition) {
+  // 'season-2025' picks that season; 'season', 'last10' and unknown years use the current one.
+  const current = pickSeason(state.pod.games);
+  const asked = edition.startsWith('season-') ? +edition.slice(7) : current;
+  const season = seasons(state.pod.games).includes(asked) ? asked : current;
+  const range = edition.startsWith('season') ? 'season' : edition;
   const key = state.pod.generated + '|' + state.pod.games.length + '|' + range + '|' + season;
-  if (memo.key !== key) memo = { key, stats: computeStats(state.pod.games, { range, season }) };
+  if (memo.key !== key) {
+    memo = { key, stats: computeStats(state.pod.games, { range, season }) };
+    // The edition the masthead marks as active, e.g. 'season-2026'.
+    memo.stats.edition = range === 'season' ? 'season-' + season : range;
+    memo.stats.seasons = seasons(state.pod.games);
+  }
   return memo.stats;
 }
 

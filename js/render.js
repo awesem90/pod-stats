@@ -58,7 +58,8 @@ export function header(st, screen) {
   const firstYear = st?.allGames.length ? +st.allGames[0].date.slice(0, 4) : new Date().getFullYear();
   const vol = st ? roman(st.season - firstYear + 1) : 'I';
   const nav = [['overview', '#/', 'Front Page'], ['player', '#/player', 'Players'], ['commanders', '#/commanders', 'Commanders'], ['plays', '#/games', 'Results']];
-  const editions = [['last10', 'Last ' + CONFIG.lastN], ['season', 'Season ' + (st?.season || '')], ['all', 'All games']];
+  // All games first, then every season (newest first), then the last N games.
+  const editions = [['all', 'All games'], ...(st?.seasons || []).slice().reverse().map(y => ['season-' + y, 'Season ' + y]), ['last10', 'Last ' + CONFIG.lastN]];
   return `
   <header class="masthead">
     <div class="ears">
@@ -75,7 +76,7 @@ export function header(st, screen) {
     </div>
     <nav class="sections" aria-label="Sections">${nav.map(([key, href, label]) => `<a href="${href}" class="${screen === key ? 'active' : ''}">${label}</a>`).join('')}</nav>
     ${st ? `<div class="edition" role="group" aria-label="Edition"><span>Edition:</span>${editions.map(([key, label]) =>
-      `<button data-range="${key}" class="${st.range === key ? 'active' : ''}" aria-pressed="${st.range === key}">${esc(label)}</button>`).join('')}</div>` : ''}
+      `<button data-range="${key}" class="${st.edition === key ? 'active' : ''}" aria-pressed="${st.edition === key}">${esc(label)}</button>`).join('')}</div>` : ''}
   </header>`;
 }
 
@@ -367,7 +368,7 @@ export function plays(st, filter) {
   <div class="page">
     <p class="kicker">Results</p>
     <h1 class="headline">Every Game</h1>
-    <p class="deck">${plural(list.length, 'game')} ${scope(st)}${st.roundGames ? `; ${dec1(st.avgRounds)} rounds on average` : ''}${st.starterGames ? `; the start player won ${st.starterRate}%` : ''}. ◆ = went first.</p>
+    <p class="deck">${st.range === 'last10' && !who ? `The last ${plural(list.length, 'game')}` : `${plural(list.length, 'game')} ${scope(st)}`}${st.roundGames ? `; ${dec1(st.avgRounds)} rounds on average` : ''}${st.starterGames ? `; the start player won ${st.starterRate}%` : ''}. ◆ = went first.</p>
     <nav class="switcher">${chips}</nav>
     <div class="results">${list.length ? list.map(item).join('') : '<p class="small">No games found.</p>'}</div>
   </div>`;

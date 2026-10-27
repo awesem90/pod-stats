@@ -64,7 +64,7 @@ Put the image in `assets/articles/`, or use a Scryfall art URL. Any size works: 
 - **Commanders**: every commander played, sorted by winrate, with pilots, average rounds and fastest win.
 - **Results**: every game, with rounds, duration, start player, winner, everyone's commander and the Card of the Match.
 
-The edition switch in the masthead (*Last 10 · Season · All games*) is remembered per page. Front Page, Players and Commanders start on *All games*; Results starts on the current season (`DEFAULT_RANGE` in `js/app.js`). A player needs at least a quarter of the edition's games for a rank (`minGamesShare` in `js/config.js`); players below that are listed without one.
+The edition switch in the masthead (*All games · Season 2026 · Season 2025 · … · Last 10*, one button per season, newest first) is remembered per page. Front Page, Players and Commanders start on *All games*; Results starts on the current season (`DEFAULT_RANGE` in `js/app.js`). A player needs at least a quarter of the edition's games for a rank (`minGamesShare` in `js/config.js`); players below that are listed without one.
 
 ## Hosting
 
