@@ -1,6 +1,36 @@
 {
   "articles": [
     {
+      "id": "2026-10-29-precon-living-death-quick-game",
+      "date": "2026-10-29",
+      "time": "22:08",
+      "kicker": "Game report",
+      "headline": "A Precon, a Living Death and One Very “Quick” Last Game",
+      "deck": "Toon wins straight out of the box, Raoul raises the dead, and Sem grinds out the night’s short finale. Twelve rounds short.",
+      "byline": "By our correspondent",
+      "image": "https://cards.scryfall.io/art_crop/front/8/a/8ae6fc26-cfad-4da8-98d9-49c27c24d293.jpg?1783909085",
+      "imageFocus": "center 30%",
+      "caption": "*Giada, Font of Hope* — straight from the box.",
+      "credit": "Illustration: Kai Carpenter / Scryfall",
+      "body": [
+        "Thursday night was a three-player affair at home: Raoul, Sem and Toon, with three games before anyone went to bed. Sem went first in every one of them. It helped rather less than you might expect.",
+        "The opener belonged to Toon — and to a deck nobody had touched since it left the shrink-wrap. *Giada, Font of Hope* came to the table as an unaltered precon: no upgrades, no swaps, no secret sauce. It still beat Raoul’s *Emet-Selch, Unsundered* and Sem’s *Shalai and Hallar* across eight rounds and exactly one hour, in Giada’s very first game for Toon. A testament to his skill, and a quiet warning to everyone who has spent good money on upgrades.",
+        { "flavor": "No upgrades. No excuses. Only hope.", "source": "Giada, Font of Hope" },
+        "Raoul answered in the second game. With *Emet-Selch, Unsundered* back at the helm, he waited for the right moment and cast a well-timed *Living Death*. The returning army overran his opponents, Sem’s *Frodo and Sam* and Toon’s *Adrix and Nev, Twincasters*, in just seven rounds and 47 minutes. The table named *Living Death* card of the match — the second Thursday in a row that the card has decided a game.",
+        "And then, because it was getting late, the pod settled on one last quick game. It took twelve rounds. Sem’s *Frodo, Adventurous Hobbit* and *Sam, Loyal Attendant* faced Raoul’s *Zimone, Mystery Unraveler* and Toon’s *Imodane, the Pyrohammer* in a slow slugfest in which nobody had any resources on the board. Turn after turn, the battlefield stayed bare.",
+        "In the end Sem’s hobbits outlasted everyone, after an hour and nineteen minutes of what can only be described as the perfect quick last game.",
+        { "flavor": "Second breakfast can wait. So can the end of this game.", "source": "Sam, Loyal Attendant" },
+        "Fittingly, the table named *Frodo, Adventurous Hobbit* card of the match. Frodo and Sam now stand at six wins in fourteen games for Sem."
+      ],
+      "numbers": [
+        ["Players at the table", "3"],
+        ["Games before bedtime", "3"],
+        ["Upgrades to Toon’s precon", "0"],
+        ["Living Deaths needed", "1"],
+        ["Rounds in the “quick” last game", "12"]
+      ]
+    },
+    {
       "id": "2026-10-23-fall-of-the-fellowship",
       "date": "2026-10-23",
       "time": "21:54",
