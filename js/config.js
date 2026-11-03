@@ -19,7 +19,7 @@ export const CONFIG = {
   minGamesShare: 0.25,      // a rank needs at least this share of the edition's games
   minCommanderGames: 3,     // "Commanders above average" threshold
   lastN: 10,                // the "Last N" edition
-  frontPageArticles: 2,     // how many of the newest articles the front page shows
+  frontPageArticles: 12,    // how many of the newest articles the front page shows
 
   // Display
   showArtwork: true,

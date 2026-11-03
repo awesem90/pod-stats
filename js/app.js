@@ -1,6 +1,6 @@
 import { fetchPod, cachedPod } from './data.js';
 import { computeStats, pickSeason, seasons } from './stats.js';
-import { header, footer, overview, profile, commanders, plays, skeleton, errorPanel } from './render.js';
+import { header, footer, overview, tidbits, profile, commanders, plays, skeleton, errorPanel } from './render.js';
 
 const app = document.getElementById('app');
 const pref = {
@@ -12,7 +12,7 @@ const pref = {
 const RANGES = ['last10', 'season', 'all'];
 const validRange = r => RANGES.includes(r) || /^season-\d{4}$/.test(r || '');
 // Each page has its own edition; everything but the results page defaults to all games.
-const DEFAULT_RANGE = { overview: 'all', player: 'all', commanders: 'all', plays: 'season' };
+const DEFAULT_RANGE = { overview: 'all', player: 'all', commanders: 'all', plays: 'season', tidbits: 'all' };
 const rangeFor = screen => { const r = pref.get('range:' + screen); return validRange(r) ? r : DEFAULT_RANGE[screen]; };
 
 const state = {
@@ -44,6 +44,7 @@ function route() {
   if (page === 'player' || page === 'speler') return { screen: 'player', name: arg || null };
   if (page === 'games' || page === 'potjes') return { screen: 'plays', name: arg || null };
   if (page === 'commanders') return { screen: 'commanders' };
+  if (page === 'tidbits') return { screen: 'tidbits' };
   return { screen: 'overview' };
 }
 
@@ -63,8 +64,10 @@ function render() {
     body = plays(st, r.name); title = 'Results';
   } else if (r.screen === 'commanders') {
     body = commanders(st); title = 'Commanders';
+  } else if (r.screen === 'tidbits') {
+    body = tidbits(st); title = 'Tidbits';
   } else {
-    body = overview(st, state.pod.articles);
+    body = overview(state.pod.articles);
   }
   document.title = (title ? title + ' · ' : '') + 'The Pod Times';
   app.innerHTML = header(st, r.screen) + `<main>${body}</main>` + footer(state.pod.generated);

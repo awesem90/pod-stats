@@ -57,7 +57,7 @@ export function header(st, screen) {
   const latest = st?.allGames.length ? st.allGames[st.allGames.length - 1].date : null;
   const firstYear = st?.allGames.length ? +st.allGames[0].date.slice(0, 4) : new Date().getFullYear();
   const vol = st ? roman(st.season - firstYear + 1) : 'I';
-  const nav = [['overview', '#/', 'Front Page'], ['player', '#/player', 'Players'], ['commanders', '#/commanders', 'Commanders'], ['plays', '#/games', 'Results']];
+  const nav = [['overview', '#/', 'Front Page'], ['player', '#/player', 'Players'], ['commanders', '#/commanders', 'Commanders'], ['plays', '#/games', 'Results'], ['tidbits', '#/tidbits', 'Tidbits']];
   // All games first, then every season (newest first), then the last N games.
   const editions = [['all', 'All games'], ...(st?.seasons || []).slice().reverse().map(y => ['season-' + y, 'Season ' + y]), ['last10', 'Last ' + CONFIG.lastN]];
   return `
@@ -75,7 +75,7 @@ export function header(st, screen) {
       <span>${esc(CONFIG.price)}</span>
     </div>
     <nav class="sections" aria-label="Sections">${nav.map(([key, href, label]) => `<a href="${href}" class="${screen === key ? 'active' : ''}">${label}</a>`).join('')}</nav>
-    ${st ? `<div class="edition" role="group" aria-label="Edition"><span>Edition:</span>${editions.map(([key, label]) =>
+    ${st && screen !== 'overview' ? `<div class="edition" role="group" aria-label="Edition"><span>Edition:</span>${editions.map(([key, label]) =>
       `<button data-range="${key}" class="${st.edition === key ? 'active' : ''}" aria-pressed="${st.edition === key}">${esc(label)}</button>`).join('')}</div>` : ''}
   </header>`;
 }
@@ -129,7 +129,20 @@ function report(a, { top = false, wide = false } = {}) {
   </article>`;
 }
 
-export function overview(st, articles = []) {
+// ---------- Front page: the written articles only ----------
+export function overview(articles = []) {
+  // The newest report leads the page at full width; the older ones follow in columns.
+  const [topStory, ...more] = articles.slice(0, CONFIG.frontPageArticles);
+  if (!topStory) return '<div class="page"><p class="kicker">Going to press</p><h1 class="headline">No articles yet</h1></div>';
+  return `
+  <div class="page">
+    <section class="top-story">${report(topStory, { top: true, wide: true })}</section>
+    ${more.length ? `<section class="reports">${more.map(a => report(a, { wide: more.length === 1 })).join('')}</section>` : ''}
+  </div>`;
+}
+
+// ---------- Tidbits: standings, figures, rivalries and oddities ----------
+export function tidbits(st) {
   const L = st.ranked[0];
   const second = st.ranked[1];
   const fw = st.fastestWin;
@@ -155,11 +168,6 @@ export function overview(st, articles = []) {
     ['Fastest win', fw ? `${rounds(fw.rounds)} (${esc(fw.player)})` : '—'],
     ['Longest game', st.longestGame ? `${fmtMinutes(st.longestGame.minutes)} (${shortDate(st.longestGame.date)})` : '—'],
   ];
-
-  const form = st.players.map(p => `
-    <li><a href="${playerHref(p.name)}">${esc(p.name)}</a>
-      <span class="form-letters">${p.form.map(w => w ? '<b>W</b>' : 'L').join(' ')}</span>
-      <em>${esc(p.formNote)}</em></li>`).join('');
 
   const n = st.names.length;
   const matrix = !CONFIG.showRivalry ? '' : `
@@ -195,17 +203,19 @@ export function overview(st, articles = []) {
     </div>`).join('')
     : '<p class="small">No commander has been played by two players yet.</p>';
 
-  // The newest report leads the page at full width; the next ones sit in columns below it.
-  const [topStory, ...more] = articles.slice(0, CONFIG.frontPageArticles);
+  const odd = st.oddities.length ? `
+    <section>
+      ${sectionHead('Oddities &amp; curiosities', '<span class="small">funny things in the numbers</span>')}
+      <div class="oddities">${st.oddities.map(o => `
+        <article class="oddity"><h3>${esc(o.title)}</h3><p>${inline(o.text)}</p></article>`).join('')}
+      </div>
+    </section>` : '';
 
   return `
   <div class="page">
-    ${topStory ? `<section class="top-story">${report(topStory, { top: true, wide: true })}</section>` : ''}
-    ${more.length ? `<section class="reports">${more.map(a => report(a, { wide: more.length === 1 })).join('')}</section>` : ''}
-
     <section class="front">
       <article class="lead-story">
-        <p class="kicker">${st.range === 'all' ? 'All games' : st.range === 'last10' ? 'The last ' + st.games.length + ' games' : 'Season ' + st.season}</p>
+        <p class="kicker">Tidbits · ${st.range === 'all' ? 'all games' : st.range === 'last10' ? 'the last ' + st.games.length + ' games' : 'season ' + st.season}</p>
         <h1 class="headline">${esc(headline(st))}</h1>
         <p class="deck">${L ? `A ${L.rate}% win rate after ${plural(L.games, 'game')}; the start player wins ${st.starterRate}%` : ''}</p>
         <p class="byline">By our statistics desk</p>
@@ -215,10 +225,10 @@ export function overview(st, articles = []) {
       <aside class="col rule-left">
         ${sectionHead('Standings')}
         ${standingsTable(st)}
-        ${sectionHead('Form', '<span class="small">last 5, oldest first</span>')}
-        <ul class="form-list">${form}</ul>
       </aside>
     </section>
+
+    ${odd}
 
     <section class="three">
       <section class="col">

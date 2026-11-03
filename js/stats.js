@@ -146,23 +146,6 @@ export function computeStats(allGames, { range, season }) {
     .sort((a, b) => b.qualified - a.qualified || b.exact - a.exact || b.wins - a.wins || b.games - a.games || a.name.localeCompare(b.name));
   players.forEach((p, i) => { p.rank = p.qualified ? i + 1 : null; });
 
-  // ----- Form notes -----
-  const last5 = p => p.results.slice(-5);
-  const bestFormWins = Math.max(0, ...players.map(p => last5(p).filter(Boolean).length));
-  players.forEach(p => {
-    const r = p.results, f = last5(p), fw = f.filter(Boolean).length;
-    let note;
-    if (!r.length) note = 'no games yet';
-    else if (p.streak >= 2) note = p.streak + ' in a row';
-    else if (p.streak <= -3) note = (-p.streak) + ' games without a win';
-    else if (p.streak === 1) {
-      let dry = 0; for (let i = r.length - 2; i >= 0 && !r[i]; i--) dry++;
-      note = dry >= 3 ? 'first win in ' + (dry + 1) + ' games' : fw + ' win' + (fw === 1 ? '' : 's') + ' in ' + f.length + ' games';
-    } else note = fw ? 'mixed, ' + fw + ' of ' + f.length : 'no win in the last ' + f.length;
-    if (fw > 0 && fw === bestFormWins && players.filter(x => last5(x).filter(Boolean).length === fw).length === 1) note += ', best form';
-    p.formNote = note;
-    p.form = f;
-  });
 
   // ----- Commanders: all of them, best winrate first -----
   const commanders = [...C.values()].map(c => ({
@@ -234,5 +217,120 @@ export function computeStats(allGames, { range, season }) {
     roundGames: withRounds.length, avgRounds: mean(withRounds.map(g => g.rounds)),
     timedGames: timed.length, avgMinutes: Math.round(mean(timed.map(g => g.minutes))), longestGame,
     fastestWin: fastest(allWins),
+    oddities: oddities(games, avg),
   };
+}
+
+// ----- Oddities: funny things in the numbers, each only shown when it's actually notable -----
+const names = list => list.length > 1 ? list.slice(0, -1).join(', ') + ' and ' + list[list.length - 1] : list[0];
+const leaders = counts => {
+  const n = Math.max(0, ...Object.values(counts));
+  return { n, who: Object.keys(counts).filter(k => counts[k] === n).sort() };
+};
+
+function oddities(games, avg) {
+  const out = [];
+  const add = (title, text) => out.push({ title, text });
+  const byPlayer = {};
+  games.forEach(g => g.seats.forEach(s => (byPlayer[s.player] ||= []).push({ g, s })));
+
+  // The longest losing run anyone has had.
+  let dry = null;
+  for (const [name, list] of Object.entries(byPlayer)) {
+    let run = 0, best = 0;
+    list.forEach(({ s }) => { run = s.win ? 0 : run + 1; best = Math.max(best, run); });
+    if (!dry || best > dry.n) dry = { name, n: best };
+  }
+  if (dry && dry.n >= 6) add('The long drought', `${dry.name} once went ${dry.n} games in a row without a win — the longest dry spell in the pod.`);
+
+  // Who swaps decks most, and who sticks to one.
+  const habits = Object.entries(byPlayer).filter(([, l]) => l.length >= 8).map(([name, l]) => {
+    const c = {};
+    l.forEach(({ s }) => { if (s.commander) c[s.commander] = (c[s.commander] || 0) + 1; });
+    const [fav, favN] = Object.entries(c).sort((a, b) => b[1] - a[1])[0] || [null, 0];
+    return { name, games: l.length, distinct: Object.keys(c).length, fav, favN };
+  });
+  const hopper = habits.slice().sort((a, b) => b.distinct / b.games - a.distinct / a.games)[0];
+  if (hopper && hopper.distinct / hopper.games >= 0.5) {
+    add('The deck hopper', `${hopper.name} has brought ${hopper.distinct} different commanders to ${hopper.games} games — ${hopper.distinct / hopper.games >= 0.8 ? 'hardly ever the same deck twice' : 'a new deck almost every other game'}.`);
+  }
+  const loyal = habits.slice().sort((a, b) => b.favN / b.games - a.favN / a.games)[0];
+  if (loyal && loyal.fav && loyal.favN / loyal.games >= 0.35 && loyal !== hopper) {
+    add('The loyalist', `${loyal.name} played *${loyal.fav}* in ${loyal.favN} of ${loyal.games} games. If it ain’t broke…`);
+  }
+
+  // The usual game night.
+  const wd = {};
+  games.forEach(g => { const d = DAYS[dateOf(g.date).getDay()]; wd[d] = (wd[d] || 0) + 1; });
+  const night = leaders(wd);
+  if (games.length >= 10 && night.who.length === 1 && night.n / games.length >= 0.4) {
+    add(`${night.who[0]} is game night`, `${night.n} of ${games.length} games were played on a ${night.who[0]}.`);
+  }
+
+  // Who wins the first game of the night, and who wins the last one.
+  const nights = {};
+  games.forEach(g => (nights[g.date] ||= []).push(g));
+  const multi = Object.values(nights).filter(n => n.length >= 2).map(n => n.slice().sort((a, b) => (a.time || '').localeCompare(b.time || '')));
+  if (multi.length >= 4) {
+    const firsts = {}, lasts = {};
+    multi.forEach(n => {
+      n[0].seats.filter(s => s.win).forEach(s => { firsts[s.player] = (firsts[s.player] || 0) + 1; });
+      n[n.length - 1].seats.filter(s => s.win).forEach(s => { lasts[s.player] = (lasts[s.player] || 0) + 1; });
+    });
+    const f = leaders(firsts), l = leaders(lasts);
+    if (f.n >= 3) add('The opening act', `${names(f.who)} won the first game of the night ${f.n} times, more than anyone else, across ${multi.length} nights with more than one game.`);
+    if (l.n >= 3) add('The nightcap', `When it’s the last game of the night, bet on ${names(l.who)}: ${l.n} last-game wins${l.who.length > 1 ? ' each' : ''}.`);
+  }
+
+  // Two commanders against one.
+  const seatsOf = pred => { let g = 0, w = 0; games.forEach(x => x.seats.forEach(s => { if (pred(s)) { g++; if (s.win) w++; } })); return { g, w, r: pct(w, g) }; };
+  const duo = seatsOf(s => s.parts.length > 1), solo = seatsOf(s => s.parts.length === 1);
+  if (duo.g >= 8 && solo.g >= 8 && Math.abs(duo.r - solo.r) >= 8) {
+    add(duo.r > solo.r ? 'Two heads are better than one' : 'Too many cooks', `Decks with two commanders win ${duo.r}% of their games (${duo.w} of ${duo.g}); single commanders ${solo.r}%.`);
+  }
+
+  // The luckiest and unluckiest colour.
+  const colours = 'WUBRG'.split('').map(c => ({ c, ...seatsOf(s => s.colors.includes(c)) })).filter(x => x.g >= 20).sort((a, b) => b.r - a.r);
+  if (colours.length >= 2 && colours[0].r - colours[colours.length - 1].r >= 4) {
+    const hi = colours[0], lo = colours[colours.length - 1];
+    add('The colour of victory', `Decks with ${COLOR_NAME[hi.c].toLowerCase()} in them win ${hi.r}% of their games; decks with ${COLOR_NAME[lo.c].toLowerCase()} just ${lo.r}%.`);
+  }
+
+  // A player who shines in one particular kind of game night (BG Stats location).
+  let venue = null;
+  for (const [name, list] of Object.entries(byPlayer)) {
+    const locs = [...new Set(list.map(({ g }) => g.location).filter(Boolean))];
+    for (const loc of locs) {
+      const here = list.filter(({ g }) => g.location === loc), there = list.filter(({ g }) => g.location !== loc);
+      if (here.length < 4 || there.length < 4) continue;
+      const r = pct(here.filter(x => x.s.win).length, here.length), o = pct(there.filter(x => x.s.win).length, there.length);
+      if (r - o >= 25 && (!venue || r - o > venue.r - venue.o)) venue = { name, loc, w: here.filter(x => x.s.win).length, n: here.length, r, o };
+    }
+  }
+  if (venue) add('Location, location, location', `${venue.name} wins ${venue.w} of ${venue.n} games logged as “${venue.loc}” (${venue.r}%), against ${venue.o}% everywhere else.`);
+
+  // The most-played deck that has never won.
+  const decks = {};
+  games.forEach(g => g.seats.forEach(s => { if (!s.commander) return; const k = s.player + '\u0000' + s.commander; const d = decks[k] ||= { player: s.player, cmd: s.commander, g: 0, w: 0 }; d.g++; if (s.win) d.w++; }));
+  const cursed = Object.values(decks).filter(d => d.w === 0 && d.g >= 4).sort((a, b) => b.g - a.g)[0];
+  if (cursed) add('The cursed deck', `*${cursed.cmd}* has been to ${cursed.g} games with ${cursed.player} and has yet to win one.`);
+
+  // How often a deck wins on its very first outing.
+  const seen = new Set(); let debuts = 0, debutWins = 0;
+  games.forEach(g => g.seats.forEach(s => { const k = s.player + '\u0000' + s.commander; if (s.commander && !seen.has(k)) { seen.add(k); debuts++; if (s.win) debutWins++; } }));
+  if (debuts >= 10) {
+    const r = pct(debutWins, debuts);
+    add('Beginner’s luck?', `${debutWins} of ${debuts} decks won on their debut (${r}%), against a pod average of ${Math.round(avg)}%. ${r < avg - 3 ? 'New decks need a few games to find their feet.' : r > avg + 3 ? 'Fresh decks hit harder than you’d think.' : 'A debut is no better or worse than any other game.'}`);
+  }
+
+  // The clock.
+  const both = games.filter(g => g.rounds && g.minutes);
+  const quickest = games.filter(g => g.minutes).sort((a, b) => a.minutes - b.minutes)[0];
+  if (both.length >= 5 && quickest) {
+    const perRound = both.reduce((t, g) => t + g.minutes / g.rounds, 0) / both.length;
+    const qWinner = quickest.seats.filter(s => s.win).map(s => s.player);
+    add('Watch the clock', `A round takes ${perRound.toFixed(1)} minutes on average. The quickest game on record lasted ${quickest.minutes} minutes${qWinner.length ? `; ${names(qWinner)} won it` : ''}.`);
+  }
+
+  return out;
 }

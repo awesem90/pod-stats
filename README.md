@@ -52,19 +52,20 @@ Put the image in `assets/articles/`, or use a Scryfall art URL. Any size works: 
 | `js/data.js` | Loads `data/pod.json` and `data/articles.json` |
 | `js/stats.js` | Every stat (winrate, streaks, start player, rounds, rivalries…) as pure functions |
 | `js/render.js` | HTML for every page |
-| `js/app.js` | Routing (`#/`, `#/player/<name>`, `#/commanders`, `#/games`, `#/games/<name>`), editions, caching |
+| `js/app.js` | Routing (`#/`, `#/player/<name>`, `#/commanders`, `#/games`, `#/games/<name>`, `#/tidbits`), editions, caching |
 | `data/pod.json` | The pod's games and card info, made by the importer |
 | `tools/import-bgstats.ps1` | BG Stats export → `data/pod.json` |
 | `tools/serve.ps1` | Local preview at http://localhost:8765/ |
 
 ## Pages
 
-- **Front Page**: the lead story (generated from the stats), the standings, form, key figures, the rivalry table, "deck or player?", and the commanders above the pod average.
+- **Front Page**: the written articles only, newest on top (`data/articles.json`).
+- **Tidbits**: the generated standings story and table, oddities & curiosities (funny facts found in the stats, each shown only when notable), key figures, the rivalry table, "deck or player?", and the commanders above the pod average.
 - **Players**: a profile per player, with how often they started and won as starter, rounds per win, fastest win, decks, results against the pod, and recent games.
 - **Commanders**: every commander played, sorted by winrate, with pilots, average rounds and fastest win.
 - **Results**: every game, with rounds, duration, start player, winner, everyone's commander and the Card of the Match.
 
-The edition switch in the masthead (*All games · Season 2026 · Season 2025 · … · Last 10*, one button per season, newest first) is remembered per page. Front Page, Players and Commanders start on *All games*; Results starts on the current season (`DEFAULT_RANGE` in `js/app.js`). A player needs at least a quarter of the edition's games for a rank (`minGamesShare` in `js/config.js`); players below that are listed without one.
+The edition switch in the masthead (*All games · Season 2026 · Season 2025 · … · Last 10*, one button per season, newest first) is remembered per page. Players, Commanders and Tidbits start on *All games*; Results starts on the current season; the Front Page has no edition switch (`DEFAULT_RANGE` in `js/app.js`). A player needs at least a quarter of the edition's games for a rank (`minGamesShare` in `js/config.js`); players below that are listed without one.
 
 ## Hosting
 
