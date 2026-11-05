@@ -218,6 +218,7 @@ export function computeStats(allGames, { range, season }) {
     timedGames: timed.length, avgMinutes: Math.round(mean(timed.map(g => g.minutes))), longestGame,
     fastestWin: fastest(allWins),
     oddities: oddities(games, avg),
+    colourStandings: colourStandings(games),
   };
 }
 
@@ -333,4 +334,25 @@ function oddities(games, avg) {
   }
 
   return out;
+}
+
+// ----- Colour standings: the five colours, and every exact colour combination, by win rate -----
+const COMBO_KIND = ['Colourless', 'Mono-colour', 'Two-colour', 'Three-colour', 'Four-colour', 'Five-colour'];
+const byRate = (a, b) => b.exact - a.exact || b.games - a.games;
+
+function colourStandings(games) {
+  const colour = {}, combo = {};
+  const tally = (map, key) => (map[key] ||= { key, games: 0, wins: 0 });
+  games.forEach(g => g.seats.forEach(s => {
+    if (!s.commander) return;
+    // A deck counts for each colour in its identity, and for its one exact combination.
+    s.colors.forEach(c => { const t = tally(colour, c); t.games++; if (s.win) t.wins++; });
+    const t = tally(combo, s.colors.join('')); t.games++; if (s.win) t.wins++;
+  }));
+  const finish = t => ({ ...t, rate: pct(t.wins, t.games), exact: t.games ? t.wins / t.games : 0, kind: COMBO_KIND[t.key.length] });
+  return {
+    colours: 'WUBRG'.split('').map(c => finish(colour[c] || { key: c, games: 0, wins: 0 })).sort(byRate),
+    combos: Object.values(combo).map(finish).sort(byRate),
+    unplayed: Object.keys(COMBO_NAME).filter(k => !combo[k]),
+  };
 }

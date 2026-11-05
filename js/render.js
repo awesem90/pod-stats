@@ -130,19 +130,20 @@ function report(a, { top = false, wide = false } = {}) {
 }
 
 // ---------- Front page: the written articles only ----------
-export function overview(articles = []) {
-  // The newest report leads the page at full width; the older ones follow in columns.
+export function overview(articles = [], st = null) {
+  // The newest report leads the page at full width; the older ones follow in columns,
+  // and the statistics desk's standings story closes the page.
   const [topStory, ...more] = articles.slice(0, CONFIG.frontPageArticles);
-  if (!topStory) return '<div class="page"><p class="kicker">Going to press</p><h1 class="headline">No articles yet</h1></div>';
   return `
   <div class="page">
-    <section class="top-story">${report(topStory, { top: true, wide: true })}</section>
+    ${topStory ? `<section class="top-story">${report(topStory, { top: true, wide: true })}</section>` : ''}
     ${more.length ? `<section class="reports">${more.map(a => report(a, { wide: more.length === 1 })).join('')}</section>` : ''}
+    ${st ? `<section class="desk-story">${statsStory(st)}</section>` : ''}
   </div>`;
 }
 
-// ---------- Tidbits: standings, figures, rivalries and oddities ----------
-export function tidbits(st) {
+// The statistics desk's lead story ("Bart Leads, Mauro Close Behind"), written from the standings.
+function statsStory(st) {
   const L = st.ranked[0];
   const second = st.ranked[1];
   const fw = st.fastestWin;
@@ -155,6 +156,43 @@ export function tidbits(st) {
     ${st.starterGames ? `<p>Does going first pay off? Of the ${st.starterGames} games with a recorded start player, the starter won ${st.starterWins}: ${st.starterRate}%. Pure chance would give ${Math.round(st.starterChance)}%. ${verdict}</p>` : ''}
     ${st.roundGames ? `<p>A game lasts ${dec1(st.avgRounds)} rounds on average${st.avgMinutes ? `, or ${fmtMinutes(st.avgMinutes)}` : ''}.${fw ? ` The fastest win belongs to ${esc(fw.player)}${fw.commander ? ` with ${esc(fw.commander)}` : ''}: ${rounds(fw.rounds)}, on ${longDate(fw.date)}.` : ''}</p>` : ''}`
     : '<p>No games have been played in this edition yet.</p>';
+
+  return `
+  <article class="lead-story">
+    <p class="kicker">From the statistics desk · ${st.range === 'all' ? 'all games' : st.range === 'last10' ? 'the last ' + st.games.length + ' games' : 'season ' + st.season}</p>
+    <h2 class="headline">${esc(headline(st))}</h2>
+    <p class="deck">${L ? `A ${L.rate}% win rate after ${plural(L.games, 'game')}; the start player wins ${st.starterRate}%` : ''}</p>
+    <p class="byline">By our statistics desk</p>
+    ${L ? photo(L.mainParts, { caption: `${L.name} played ${L.mainDeck} most often.`, size: 'lead' }) : ''}
+    <div class="story">${story}</div>
+  </article>`;
+}
+
+// The five colours and every exact colour combination, ranked by win rate.
+function colourTables(cs) {
+  const row = (i, label, t) => `<tr><td>${i + 1}</td><td class="l">${label}</td><td>${t.games}</td><td>${t.wins}</td><td class="b">${t.rate}</td></tr>`;
+  const head = first => `<thead><tr><th>#</th><th class="l">${first}</th><th title="Games">G</th><th title="Wins">W</th><th>%</th></tr></thead>`;
+  return `
+    <section class="col">
+      ${sectionHead('Colour standings')}
+      <p class="small">A deck counts for every colour in its identity.</p>
+      <table class="agate">${head('Colour')}
+        <tbody>${cs.colours.map((t, i) => row(i, `${mana([t.key])} ${COLOR_NAME[t.key]}`, t)).join('')}</tbody>
+      </table>
+    </section>
+    <section class="col">
+      ${sectionHead('Every colour combination')}
+      <p class="small">Each deck counts once, for its exact colour identity. Ties go to the combination played most.</p>
+      <table class="agate combos">${head('Combination')}
+        <tbody>${cs.combos.map((t, i) => row(i, `${comboText(t.key)} <span class="kind">${t.kind}</span>`, t)).join('')}</tbody>
+      </table>
+      ${cs.unplayed.length ? `<p class="agate-note">Never played: ${cs.unplayed.map(k => COMBO_NAME[k]).join(', ')}.</p>` : ''}
+    </section>`;
+}
+
+// ---------- Tidbits: standings, colours, figures, rivalries and oddities ----------
+export function tidbits(st) {
+  const fw = st.fastestWin;
 
   const facts = [
     ['Games played', st.games.length],
@@ -213,19 +251,15 @@ export function tidbits(st) {
 
   return `
   <div class="page">
-    <section class="front">
-      <article class="lead-story">
-        <p class="kicker">Tidbits · ${st.range === 'all' ? 'all games' : st.range === 'last10' ? 'the last ' + st.games.length + ' games' : 'season ' + st.season}</p>
-        <h1 class="headline">${esc(headline(st))}</h1>
-        <p class="deck">${L ? `A ${L.rate}% win rate after ${plural(L.games, 'game')}; the start player wins ${st.starterRate}%` : ''}</p>
-        <p class="byline">By our statistics desk</p>
-        ${L ? photo(L.mainParts, { caption: `${L.name} played ${L.mainDeck} most often.`, size: 'lead' }) : ''}
-        <div class="story">${story}</div>
-      </article>
-      <aside class="col rule-left">
+    <p class="kicker">Tidbits · ${st.range === 'all' ? 'all games' : st.range === 'last10' ? 'the last ' + st.games.length + ' games' : 'season ' + st.season}</p>
+    <h1 class="headline">The Numbers Behind the Pod</h1>
+
+    <section class="three tidbits-top">
+      <section class="col">
         ${sectionHead('Standings')}
         ${standingsTable(st)}
-      </aside>
+      </section>
+      ${colourTables(st.colourStandings)}
     </section>
 
     ${odd}

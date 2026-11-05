@@ -59,8 +59,8 @@ Put the image in `assets/articles/`, or use a Scryfall art URL. Any size works: 
 
 ## Pages
 
-- **Front Page**: the written articles only, newest on top (`data/articles.json`).
-- **Tidbits**: the generated standings story and table, oddities & curiosities (funny facts found in the stats, each shown only when notable), key figures, the rivalry table, "deck or player?", and the commanders above the pod average.
+- **Front Page**: the written articles, newest on top (`data/articles.json`), closed by the statistics desk's standings story (always all games).
+- **Tidbits**: the standings table, colour standings (the five colours and every exact colour combination by win rate, plus the combinations never played), oddities & curiosities (funny facts found in the stats, each shown only when notable), key figures, the rivalry table, "deck or player?", and the commanders above the pod average.
 - **Players**: a profile per player, with how often they started and won as starter, rounds per win, fastest win, decks, results against the pod, and recent games.
 - **Commanders**: every commander played, sorted by winrate, with pilots, average rounds and fastest win.
 - **Results**: every game, with rounds, duration, start player, winner, everyone's commander and the Card of the Match.

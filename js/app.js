@@ -54,7 +54,8 @@ function render() {
     app.innerHTML = header(null, r.screen) + `<main>${state.error ? errorPanel(state.error) : skeleton()}</main>`;
     return;
   }
-  const st = stats(rangeFor(r.screen));
+  // The front page has no edition switch, so its standings story always covers all games.
+  const st = stats(r.screen === 'overview' ? 'all' : rangeFor(r.screen));
   let body, title = '';
   if (r.screen === 'player') {
     const name = r.name || (st.players.some(p => p.name === state.player) ? state.player : st.players[0]?.name);
@@ -67,7 +68,7 @@ function render() {
   } else if (r.screen === 'tidbits') {
     body = tidbits(st); title = 'Tidbits';
   } else {
-    body = overview(state.pod.articles);
+    body = overview(state.pod.articles, st);
   }
   document.title = (title ? title + ' · ' : '') + 'The Pod Times';
   app.innerHTML = header(st, r.screen) + `<main>${body}</main>` + footer(state.pod.generated);
