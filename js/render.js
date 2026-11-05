@@ -172,27 +172,27 @@ function statsStory(st) {
 function colourTables(cs) {
   const row = (i, label, t) => `<tr><td>${i + 1}</td><td class="l">${label}</td><td>${t.games}</td><td>${t.wins}</td><td class="b">${t.rate}</td></tr>`;
   const head = first => `<thead><tr><th>#</th><th class="l">${first}</th><th title="Games">G</th><th title="Wins">W</th><th>%</th></tr></thead>`;
-  return `
-    <section class="col">
+  return {
+    colours: `
       ${sectionHead('Colour standings')}
       <p class="small">A deck counts for every colour in its identity.</p>
       <table class="agate">${head('Colour')}
         <tbody>${cs.colours.map((t, i) => row(i, `${mana([t.key])} ${COLOR_NAME[t.key]}`, t)).join('')}</tbody>
-      </table>
-    </section>
-    <section class="col">
+      </table>`,
+    combos: `
       ${sectionHead('Every colour combination')}
       <p class="small">Each deck counts once, for its exact colour identity. Ties go to the combination played most.</p>
       <table class="agate combos">${head('Combination')}
-        <tbody>${cs.combos.map((t, i) => row(i, `${comboText(t.key)} <span class="kind">${t.kind}</span>`, t)).join('')}</tbody>
+        <tbody>${cs.combos.map((t, i) => row(i, `${comboText(t.key)} <span class="kind">${t.kind.toLowerCase()}</span>`, t)).join('')}</tbody>
       </table>
-      ${cs.unplayed.length ? `<p class="agate-note">Never played: ${cs.unplayed.map(k => COMBO_NAME[k]).join(', ')}.</p>` : ''}
-    </section>`;
+      ${cs.unplayed.length ? `<p class="agate-note">Never played: ${cs.unplayed.map(k => COMBO_NAME[k]).join(', ')}.</p>` : ''}`,
+  };
 }
 
 // ---------- Tidbits: standings, colours, figures, rivalries and oddities ----------
 export function tidbits(st) {
   const fw = st.fastestWin;
+  const colours = colourTables(st.colourStandings);
 
   const facts = [
     ['Games played', st.games.length],
@@ -254,21 +254,20 @@ export function tidbits(st) {
     <p class="kicker">Tidbits · ${st.range === 'all' ? 'all games' : st.range === 'last10' ? 'the last ' + st.games.length + ' games' : 'season ' + st.season}</p>
     <h1 class="headline">The Numbers Behind the Pod</h1>
 
-    <section class="three tidbits-top">
+    <section class="tidbits-top">
       <section class="col">
         ${sectionHead('Standings')}
         ${standingsTable(st)}
+        ${colours.colours}
+        ${sectionHead('Key figures')}
+        <dl class="facts pairs">${facts.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl>
       </section>
-      ${colourTables(st.colourStandings)}
+      <section class="col rule-left">${colours.combos}</section>
     </section>
 
     ${odd}
 
-    <section class="three">
-      <section class="col">
-        ${sectionHead('Key figures')}
-        <dl class="facts">${facts.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl>
-      </section>
+    <section class="three two">
       ${matrix}
       <section class="col">
         ${sectionHead('The deck or the player?')}

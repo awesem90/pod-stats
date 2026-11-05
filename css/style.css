@@ -276,7 +276,19 @@ a.scry:hover { text-decoration-color: var(--ink); }
 .oddity p { font-size: 15px; line-height: 1.45; }
 
 /* ---------- Tidbits top row and the front-page statistics story ---------- */
-.tidbits-top { border-top: 0; padding-top: 0; }
-.agate.combos .kind { display: block; font-size: 12px; font-style: italic; color: var(--ink-3); }
+.tidbits-top { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 0 26px; align-items: start; }
+.tidbits-top > .rule-left { padding-left: 26px; }
+.tidbits-top > .col > .section-head ~ .section-head { margin-top: 18px; }
+@media (max-width: 900px) { .tidbits-top { grid-template-columns: minmax(0, 1fr); } .tidbits-top > .rule-left { padding-left: 0; } }
+.agate.combos .kind { font-size: 12.5px; font-style: italic; color: var(--ink-3); margin-left: 4px; }
 .desk-story { border-top: 3px double var(--rule); padding-top: 14px; }
 .desk-story .lead-story .headline { font-size: clamp(30px, 3.8vw, 46px); }
+/* Rivalries and deck-or-player share a two-column row on Tidbits */
+.three.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (max-width: 900px) { .three.two { grid-template-columns: minmax(0, 1fr); } }
+/* Key figures on Tidbits: two label/value pairs per row, like a box score */
+.facts.pairs { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto; column-gap: 0; }
+.facts.pairs dd { padding-right: 18px; }
+.facts.pairs dd:nth-of-type(2n) { padding-right: 0; }
+.facts.pairs dt:nth-of-type(2n) { padding-left: 18px; border-left: 1px dotted var(--rule-soft); }
+@media (max-width: 520px) { .facts.pairs { grid-template-columns: minmax(0, 1fr) auto; } .facts.pairs dd { padding-right: 0; } .facts.pairs dt:nth-of-type(2n) { padding-left: 0; border-left: 0; } }
