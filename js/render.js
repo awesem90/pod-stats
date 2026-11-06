@@ -272,7 +272,7 @@ export function tidbits(st) {
         <dl class="facts pairs">${facts.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl>
       </section>
       <section class="col rule-left">${colours.combos}
-        ${sectionHead('Universes Beyond')}
+        ${sectionHead('Universes Beyond Commanders')}
         <p class="small">Commanders from licensed worlds: Lord of the Rings, Final Fantasy, Marvel, Fallout and friends.</p>
         <dl class="facts ub">${ubFacts.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl>
       </section>
