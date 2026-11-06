@@ -27,6 +27,8 @@ function toGames(pod) {
           commander: names.join(' & ') || null,
           parts: names,
           colors: WUBRG.filter(c => infos.some(i => i?.colors.includes(c))),
+          // Universes Beyond (Lord of the Rings, Final Fantasy, Marvel, ...): set by the importer per card.
+          ub: infos.some(i => i?.ub),
         };
       }),
     };

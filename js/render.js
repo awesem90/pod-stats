@@ -207,6 +207,15 @@ export function tidbits(st) {
     ['Longest game', st.longestGame ? `${fmtMinutes(st.longestGame.minutes)} (${shortDate(st.longestGame.date)})` : '—'],
   ];
 
+  // Licensed worlds (Lord of the Rings, Final Fantasy, Marvel, ...) against regular Magic.
+  const ub = st.ub;
+  const ubFacts = [
+    ['Decks from Universes Beyond', ub.seats ? `${ub.ub} of ${ub.seats} (${ub.share}%)` : '—'],
+    ['Win rate of UB decks', ub.ub ? `${ub.rate}%` : '—'],
+    ['Win rate of all other decks', ub.seats > ub.ub ? `${ub.restRate}%` : '—'],
+    ['Most-played UB commander', ub.topName ? `${esc(shortName(ub.topName.split(' & ')))} (${plural(ub.topGames, 'game')})` : '—'],
+  ];
+
   const n = st.names.length;
   const matrix = !CONFIG.showRivalry ? '' : `
     <section class="col">
@@ -262,7 +271,11 @@ export function tidbits(st) {
         ${sectionHead('Key figures')}
         <dl class="facts pairs">${facts.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl>
       </section>
-      <section class="col rule-left">${colours.combos}</section>
+      <section class="col rule-left">${colours.combos}
+        ${sectionHead('Universes Beyond')}
+        <p class="small">Commanders from licensed worlds: Lord of the Rings, Final Fantasy, Marvel, Fallout and friends.</p>
+        <dl class="facts ub">${ubFacts.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl>
+      </section>
     </section>
 
     ${odd}
@@ -304,9 +317,11 @@ export function profile(st, name) {
     ['Games', p.games],
     ['Wins', `${p.wins} (pod average ${dec1(st.avgWinsPerPlayer)})`],
     ['Went first', p.starts ? `${p.starts}×, won ${p.startWins} of those (${pct(p.startWins, p.starts)}%)` : '—'],
+    ['Average game length', p.avgMinutes ? `${fmtMinutes(p.avgMinutes)}${p.rounds.length ? ` (${dec1(p.avgRounds)} rounds)` : ''}` : '—'],
     ['Average rounds per win', p.winRounds ? dec1(p.winRounds) : '—'],
     ['Fastest win', p.fastest ? `${rounds(p.fastest.rounds)}, ${shortDate(p.fastest.date)}` : '—'],
     ['Best deck', best ? `${esc(best.name)} (${best.rate}%)` : '—'],
+    ['Universes Beyond', `${p.ubGames} of ${plural(p.games, 'game')} (${pct(p.ubGames, p.games)}%)`],
     ['Favourite colour', favText(fav, k => `${mana([k])} ${COLOR_NAME[k]}`, allGames)],
     ['Favourite colour combination', favText(combo, comboText, allGames)],
   ];

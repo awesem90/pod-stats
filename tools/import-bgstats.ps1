@@ -89,6 +89,30 @@ foreach ($n in @($missing | Where-Object { -not $cards.Contains($_.ToLower()) })
   Start-Sleep -Milliseconds 150
 }
 
+# Universes Beyond (Lord of the Rings, Final Fantasy, Marvel, ...): a card counts as UB when every paper
+# printing of it is UB, so Magic cards reprinted in UB products (Living Death, Rhystic Study) don't count.
+# Scryfall's is:ub filter knows the UB printings; the security stamp doesn't (Avatar uses the oval stamp).
+# Cards from earlier runs are read back as objects; turn them into tables so a 'ub' flag can be added.
+foreach ($k in @($cards.Keys)) {
+  if ($cards[$k] -is [pscustomobject]) {
+    $h = [ordered]@{}; $cards[$k].PSObject.Properties | ForEach-Object { $h[$_.Name] = $_.Value }; $cards[$k] = $h
+  }
+}
+# ubRule marks cards checked with this rule; anything older is checked again.
+$unknown = @($cards.Values | Where-Object { $_['ubRule'] -ne 2 } | ForEach-Object { $_.name } | Sort-Object -Unique)
+for ($i = 0; $i -lt $unknown.Count; $i += 15) {
+  $batch = $unknown[$i..([Math]::Min($i + 14, $unknown.Count - 1))]
+  # Which of these have a printing on paper that isn't UB? Those are ordinary Magic cards.
+  $q = '-is:ub game:paper (' + (($batch | ForEach-Object { '!"' + $_ + '"' }) -join ' or ') + ')'
+  $magic = @{}
+  try {
+    $res = Invoke-RestMethod -Uri ('https://api.scryfall.com/cards/search?unique=cards&q=' + [Uri]::EscapeDataString($q)) -Headers $headers
+    $res.data | ForEach-Object { $magic[($_.name -split ' // ')[0].ToLower()] = $true }
+  } catch { if ($_.Exception.Response.StatusCode.value__ -ne 404) { throw } }   # 404 = all of them are UB-only
+  foreach ($c in $cards.Values) { if ($batch -contains $c.name) { $c['ub'] = -not $magic[$c.name.ToLower()]; $c['ubRule'] = 2 } }
+  Start-Sleep -Milliseconds 150
+}
+
 $data = [ordered]@{
   generated = (Get-Date).ToString('yyyy-MM-dd HH:mm')
   game      = $game.name

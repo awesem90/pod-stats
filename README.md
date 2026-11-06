@@ -18,7 +18,8 @@ The importer:
 - reads each player's commander from the BG Stats "role" field, splitting partners on `&` and backgrounds on `with`;
 - takes the winner(s), start player, rounds, duration and location;
 - takes **Card of the Match** from a `Cotm: <card>` line in the play comments. Other comments are private notes and are **not** published;
-- looks up every card once on Scryfall (art, colour identity, card image) and stores the results in `data/pod.json`. Earlier lookups are reused, so the site makes no API calls at runtime.
+- looks up every card once on Scryfall (art, colour identity, card image) and stores the results in `data/pod.json`. Earlier lookups are reused, so the site makes no API calls at runtime;
+- marks Universes Beyond cards (`ub`): a card counts as UB only when every paper printing of it is UB (Scryfall `is:ub`), so Magic cards reprinted in UB products, like Living Death, do not count.
 
 ## Articles
 

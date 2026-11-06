@@ -292,3 +292,5 @@ a.scry:hover { text-decoration-color: var(--ink); }
 .facts.pairs dd:nth-of-type(2n) { padding-right: 0; }
 .facts.pairs dt:nth-of-type(2n) { padding-left: 18px; border-left: 1px dotted var(--rule-soft); }
 @media (max-width: 520px) { .facts.pairs { grid-template-columns: minmax(0, 1fr) auto; } .facts.pairs dd { padding-right: 0; } .facts.pairs dt:nth-of-type(2n) { padding-left: 0; border-left: 0; } }
+/* Universes Beyond facts: labels keep a fair share of the width, long values wrap */
+.facts.ub { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); }

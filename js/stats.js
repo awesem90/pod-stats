@@ -59,7 +59,7 @@ export function computeStats(allGames, { range, season }) {
   const P = new Map(); // player -> stats
   const C = new Map(); // commander -> stats
   const player = name => {
-    if (!P.has(name)) P.set(name, { name, games: 0, wins: 0, results: [], commanders: [], decks: new Map(), log: [], starts: 0, startWins: 0, winList: [] });
+    if (!P.has(name)) P.set(name, { name, games: 0, wins: 0, results: [], commanders: [], decks: new Map(), log: [], starts: 0, startWins: 0, winList: [], ubGames: 0, minutes: [], rounds: [] });
     return P.get(name);
   };
   let seats = 0, wins = 0;
@@ -71,6 +71,9 @@ export function computeStats(allGames, { range, season }) {
       p.games++; seats++;
       if (s.win) { p.wins++; wins++; }
       if (s.starter) { p.starts++; if (s.win) p.startWins++; }
+      if (s.ub) p.ubGames++;
+      if (g.minutes) p.minutes.push(g.minutes);
+      if (g.rounds) p.rounds.push(g.rounds);
       p.results.push(s.win);
       p.log.push({ game: g, seat: s });
       const win = { player: s.player, commander: s.commander, rounds: g.rounds, minutes: g.minutes, date: g.date };
@@ -135,6 +138,8 @@ export function computeStats(allGames, { range, season }) {
       mainColors: mainDeck ? p.decks.get(mainDeck).colors : [],
       fastest: fastest(p.winList),
       winRounds: mean(p.winList.filter(w => w.rounds).map(w => w.rounds)),
+      avgMinutes: Math.round(mean(p.minutes)),
+      avgRounds: mean(p.rounds),
       palette: {
         games: palette[p.name]?.games || 0,
         color: top(palette[p.name]?.colors || {}, 'WUBRG'),
@@ -219,6 +224,7 @@ export function computeStats(allGames, { range, season }) {
     fastestWin: fastest(allWins),
     oddities: oddities(games, avg),
     colourStandings: colourStandings(games),
+    ub: universesBeyond(games),
   };
 }
 
@@ -258,6 +264,14 @@ function oddities(games, avg) {
   const loyal = habits.slice().sort((a, b) => b.favN / b.games - a.favN / a.games)[0];
   if (loyal && loyal.fav && loyal.favN / loyal.games >= 0.35 && loyal !== hopper) {
     add('The loyalist', `${loyal.name} played *${loyal.fav}* in ${loyal.favN} of ${loyal.games} games. If it ain’t broke…`);
+  }
+
+  // Someone who almost never leaves the licensed worlds of Universes Beyond.
+  const beyond = Object.entries(byPlayer).filter(([, l]) => l.length >= 8)
+    .map(([name, l]) => ({ name, games: l.length, ub: l.filter(x => x.s.ub).length }))
+    .sort((a, b) => b.ub / b.games - a.ub / a.games)[0];
+  if (beyond && beyond.ub / beyond.games >= 0.75) {
+    add('Lost in the multiverse', `${beyond.name} brought a Universes Beyond commander to ${beyond.ub} of ${beyond.games} games (${pct(beyond.ub, beyond.games)}%). Regular Magic need not apply.`);
   }
 
   // The usual game night.
@@ -355,4 +369,20 @@ function colourStandings(games) {
     combos: Object.values(combo).map(finish).sort(byRate),
     unplayed: Object.keys(COMBO_NAME).filter(k => !combo[k]),
   };
+}
+
+// ----- Universes Beyond: how often a licensed-world commander (Lord of the Rings, Final Fantasy, ...) sits at the table -----
+function universesBeyond(games) {
+  let seats = 0, ub = 0, ubWins = 0, restWins = 0;
+  const cmd = {};
+  games.forEach(g => g.seats.forEach(s => {
+    if (!s.commander) return;
+    seats++;
+    if (s.ub) {
+      ub++; if (s.win) ubWins++;
+      cmd[s.commander] = (cmd[s.commander] || 0) + 1;
+    } else if (s.win) restWins++;
+  }));
+  const [topName, topGames] = Object.entries(cmd).sort((a, b) => b[1] - a[1])[0] || [null, 0];
+  return { seats, ub, share: pct(ub, seats), ubWins, rate: pct(ubWins, ub), restRate: pct(restWins, seats - ub), topName, topGames };
 }
