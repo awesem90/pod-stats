@@ -321,7 +321,7 @@ export function profile(st, name) {
     ['Average rounds per win', p.winRounds ? dec1(p.winRounds) : '—'],
     ['Fastest win', p.fastest ? `${rounds(p.fastest.rounds)}, ${shortDate(p.fastest.date)}` : '—'],
     ['Best deck', best ? `${esc(best.name)} (${best.rate}%)` : '—'],
-    ['Universes Beyond', `${p.ubGames} of ${plural(p.games, 'game')} (${pct(p.ubGames, p.games)}%)`],
+    ['Universes Beyond Commander', `${p.ubGames} of ${plural(p.games, 'game')} (${pct(p.ubGames, p.games)}%)`],
     ['Favourite colour', favText(fav, k => `${mana([k])} ${COLOR_NAME[k]}`, allGames)],
     ['Favourite colour combination', favText(combo, comboText, allGames)],
   ];
